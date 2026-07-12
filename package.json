@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/generate-icons.mjs && tsc -b && vite build",
-    "build:web": "export VITE_ROUTER_BASE=/expense-tracker && node scripts/generate-icons.mjs && tsc -b && vite build",
+    "build:web": "export VITE_BASE=/expense-tracker/ && node scripts/generate-icons.mjs && tsc -b && vite build",
     "preview": "vite preview",
+    "preview:web": "export VITE_BASE=/expense-tracker/ && vite preview",
     "cap:init": "npx cap init",
     "cap:add:android": "npx cap add android",
     "cap:sync": "npm run build && npx cap sync",
+    "cap:sync:web": "npm run build:web && npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:run:android": "npx cap run android"
   },
