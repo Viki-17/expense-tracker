@@ -1,0 +1,105 @@
+import Dexie, { type Table } from 'dexie';
+import type { Transaction, Category } from '../types';
+
+export class ExpenseDB extends Dexie {
+  transactions!: Table<Transaction, number>;
+  categories!: Table<Category, number>;
+
+  constructor() {
+    super('ExpenseTrackerDB');
+    this.version(1).stores({
+      transactions: '++id, type, category, date, amount',
+      categories: '++id, name',
+    });
+    this.on('populate', () => this.populate());
+  }
+
+  async populate() {
+    await this.categories.bulkAdd(DEFAULT_CATEGORIES);
+  }
+
+  async getTransactionsInRange(startDate: string, endDate: string): Promise<Transaction[]> {
+    return this.transactions
+      .where('date')
+      .between(startDate, endDate, true, true)
+      .reverse()
+      .sortBy('date');
+  }
+
+  async getTransactionsByCategory(category: string): Promise<Transaction[]> {
+    return this.transactions.where('category').equals(category).toArray();
+  }
+
+  async getTotalByType(type: 'expense' | 'income', startDate?: string, endDate?: string): Promise<number> {
+    let collection = this.transactions.filter((t) => t.type === type);
+    const arr = await collection.toArray();
+    if (startDate && endDate) {
+      return arr
+        .filter((t) => t.date >= startDate && t.date <= endDate)
+        .reduce((sum, t) => sum + t.amount, 0);
+    }
+    return arr.reduce((sum, t) => sum + t.amount, 0);
+  }
+
+  async getCategoryBreakdown(startDate: string, endDate: string): Promise<{ category: string; total: number }[]> {
+    const expenses = await this.transactions
+      .where('date')
+      .between(startDate, endDate, true, true)
+      .and((t) => t.type === 'expense')
+      .toArray();
+
+    const breakdown: Record<string, number> = {};
+    for (const t of expenses) {
+      breakdown[t.category] = (breakdown[t.category] || 0) + t.amount;
+    }
+    return Object.entries(breakdown)
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  async getDailyTotals(startDate: string, endDate: string): Promise<{ date: string; expense: number; income: number }[]> {
+    const transactions = await this.getTransactionsInRange(startDate, endDate);
+    const map: Record<string, { date: string; expense: number; income: number }> = {};
+
+    const dates = getDatesInRange(startDate, endDate);
+    dates.forEach((d) => (map[d] = { date: d, expense: 0, income: 0 }));
+
+    for (const t of transactions) {
+      if (map[t.date]) {
+        if (t.type === 'expense') map[t.date].expense += t.amount;
+        else map[t.date].income += t.amount;
+      }
+    }
+    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+  }
+}
+
+function getDatesInRange(start: string, end: string): string[] {
+  const dates: string[] = [];
+  const current = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  while (current <= endDate) {
+    dates.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+export const db = new ExpenseDB();
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  { name: 'Food & Dining', icon: '🍔', color: '#f97316' },
+  { name: 'Shopping', icon: '🛍️', color: '#ec4899' },
+  { name: 'Transport', icon: '🚗', color: '#3b82f6' },
+  { name: 'Bills & Utilities', icon: '📄', color: '#6366f1' },
+  { name: 'Entertainment', icon: '🎬', color: '#8b5cf6' },
+  { name: 'Groceries', icon: '🛒', color: '#22c55e' },
+  { name: 'Healthcare', icon: '🏥', color: '#ef4444' },
+  { name: 'Education', icon: '📚', color: '#06b6d4' },
+  { name: 'Travel', icon: '✈️', color: '#14b8a6' },
+  { name: 'Rent', icon: '🏠', color: '#78716c' },
+  { name: 'Investment', icon: '📈', color: '#a855f7' },
+  { name: 'Salary', icon: '💰', color: '#22c55e' },
+  { name: 'Freelance', icon: '💻', color: '#0ea5e9' },
+  { name: 'Other', icon: '📌', color: '#64748b' },
+];

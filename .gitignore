@@ -1,0 +1,12 @@
+node_modules/
+dist/
+tsconfig.tsbuildinfo
+android/app/build/
+android/.gradle/
+android/capacitor-cordova-android-plugins/
+android/captures/
+android/build/
+*.apk
+*.aab
+.DS_Store
+*.log
