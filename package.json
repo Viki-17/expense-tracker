@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/generate-icons.mjs && tsc -b && vite build",
-    "build:web": "export VITE_BASE=/expense-tracker/ && node scripts/generate-icons.mjs && tsc -b && vite build",
+    "build:web": "export VITE_ROUTER_BASE=/expense-tracker && node scripts/generate-icons.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "preview:web": "export VITE_BASE=/expense-tracker/ && vite preview",
     "cap:init": "npx cap init",
