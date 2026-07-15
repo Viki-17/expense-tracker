@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency } from '../utils/formatters';
@@ -11,7 +12,11 @@ const LIST_OVERSCAN = 5;
 export default function TransactionList() {
   const { transactions, deleteTransaction } = useTransactions();
   const { getCategory } = useCategories();
-  const [filter, setFilter] = useState<'all' | 'expense' | 'income'>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filterParam = searchParams.get('filter');
+  const [filter, setFilter] = useState<'all' | 'expense' | 'income'>(
+    filterParam === 'expense' || filterParam === 'income' ? filterParam : 'all'
+  );
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
   const [listHeight, setListHeight] = useState(400);
@@ -77,7 +82,14 @@ export default function TransactionList() {
           {(['all', 'expense', 'income'] as const).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                setFilter(f);
+                if (f === 'all') {
+                  setSearchParams({});
+                } else {
+                  setSearchParams({ filter: f });
+                }
+              }}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
                 filter === f ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
               }`}

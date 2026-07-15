@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTransactionStats } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency, startOfMonth, endOfMonth, today, startOfWeek } from '../utils/formatters';
@@ -8,6 +9,11 @@ import type { DateRange } from '../types';
 export default function Dashboard() {
   const [range, setRange] = useState<DateRange>('month');
   const { categories } = useCategories();
+  const navigate = useNavigate();
+
+  const handleCardTap = useCallback((type: 'expense' | 'income') => {
+    navigate(`/transactions?filter=${type}`);
+  }, [navigate]);
 
   const rangeDates = useMemo(() => {
     switch (range) {
@@ -82,8 +88,8 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryCard label="Expenses" amount={totalExpense} color="text-expense-500" icon="💸" />
-        <SummaryCard label="Income" amount={totalIncome} color="text-income-500" icon="💰" />
+        <SummaryCard label="Expenses" amount={totalExpense} color="text-expense-500" icon="💸" onClick={() => handleCardTap('expense')} />
+        <SummaryCard label="Income" amount={totalIncome} color="text-income-500" icon="💰" onClick={() => handleCardTap('income')} />
         <SummaryCard label="Net" amount={net} color={net >= 0 ? 'text-income-500' : 'text-expense-500'} icon="📊" />
         <SummaryCard label="Transactions" amount={breakdown.reduce((s) => s + 1, 0)} color="text-primary-600" icon="📝" isCount />
       </div>
@@ -169,11 +175,17 @@ export default function Dashboard() {
   );
 }
 
-function SummaryCard({ label, amount, color, icon, isCount }: {
-  label: string; amount: number; color: string; icon: string; isCount?: boolean;
+function SummaryCard({ label, amount, color, icon, isCount, onClick }: {
+  label: string; amount: number; color: string; icon: string; isCount?: boolean; onClick?: () => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+    <div
+      className={`bg-white rounded-2xl border border-gray-100 p-4 ${onClick ? 'cursor-pointer active:scale-[0.97] transition-transform hover:border-gray-200' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter') onClick(); } : undefined}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-gray-400 font-medium">{label}</span>
         <span className="text-lg">{icon}</span>
