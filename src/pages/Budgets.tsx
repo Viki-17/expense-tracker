@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactionStats } from '../hooks/useTransactions';
-import { startOfMonth, endOfMonth, formatCurrency, today } from '../utils/formatters';
+import { startOfMonth, endOfMonth, formatCurrency } from '../utils/formatters';
+
+const INCOME_CATEGORIES_SET = new Set(['Salary', 'Freelance', 'Investment']);
 
 export default function Budgets() {
   const { categories, updateCategory } = useCategories();
@@ -15,23 +17,41 @@ export default function Budgets() {
 
   const stats = useTransactionStats(rangeDates.start, rangeDates.end);
 
-  const expenseCategories = categories.filter((c) =>
-    !['Salary', 'Freelance', 'Investment'].includes(c.name)
+  const expenseCategories = useMemo(() =>
+    categories.filter((c) => !INCOME_CATEGORIES_SET.has(c.name)),
+    [categories]
   );
 
-  const handleSetBudget = async (id: number) => {
+  const breakdownMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (stats?.breakdown) {
+      for (const b of stats.breakdown) {
+        map.set(b.category, b.total);
+      }
+    }
+    return map;
+  }, [stats?.breakdown]);
+
+  const handleSetBudget = useCallback(async (id: number) => {
     const amount = parseFloat(budgetValue);
     if (!amount || amount <= 0) return;
     await updateCategory(id, { budget: amount });
     setEditingId(null);
     setBudgetValue('');
-  };
+  }, [budgetValue, updateCategory]);
+
+  const handleStartEdit = useCallback((id: number, currentBudget: string | number | undefined) => {
+    setEditingId(id);
+    setBudgetValue(currentBudget?.toString() || '');
+  }, []);
+
+  const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">
-          Monthly Budgets — {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+          Monthly Budgets — {monthLabel}
         </h3>
         <p className="text-xs text-gray-400 -mt-3 mb-4">
           Set spending limits for each category to track your expenses better.
@@ -39,7 +59,7 @@ export default function Budgets() {
 
         <div className="space-y-3">
           {expenseCategories.map((cat) => {
-            const spent = stats?.breakdown.find((b) => b.category === cat.name)?.total || 0;
+            const spent = breakdownMap.get(cat.name) || 0;
             const budgeted = cat.budget || 0;
             const remaining = budgeted - spent;
             const pct = budgeted > 0 ? (spent / budgeted) * 100 : 0;
@@ -81,10 +101,7 @@ export default function Budgets() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => {
-                          setEditingId(cat.id!);
-                          setBudgetValue(cat.budget?.toString() || '');
-                        }}
+                        onClick={() => handleStartEdit(cat.id!, cat.budget)}
                         className="text-xs px-2 py-1 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         {budgeted > 0 ? formatCurrency(budgeted) : 'Set Budget'}

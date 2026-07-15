@@ -1,5 +1,17 @@
 # Expense Tracker — Project Memory
 
+## Performance (critical)
+
+- **Performance is a key factor** — every change must consider impact on low-end Android Capacitor WebView
+- All data-intensive values (`filtered`, `total`, `pieData`, `barData`) must be wrapped in `useMemo`
+- All handler functions passed as props must be wrapped in `useCallback`
+- Components should render nothing beyond what's visible (list virtualization preferred for 100+ items)
+- Database queries must use indexed queries — never `filter()` on the full table
+- `useLiveQuery` subscriptions should be scoped; never subscribe to the full `transactions` table when only needing a mutator function
+- Route-based code splitting via `React.lazy` is enabled — new pages should follow the lazy import pattern
+- Charts (Recharts) must cap data points to max 90 for all-time ranges
+- CSS animations on navigation are removed (costly on mobile)
+
 ## Stack
 
 | Layer | Technology | Version |

@@ -7,8 +7,8 @@ export class ExpenseDB extends Dexie {
 
   constructor() {
     super('ExpenseTrackerDB');
-    this.version(1).stores({
-      transactions: '++id, type, category, date, amount',
+    this.version(2).stores({
+      transactions: '++id, type, category, date, amount, [type+date]',
       categories: '++id, name',
     });
     this.on('populate', () => this.populate());
@@ -31,21 +31,19 @@ export class ExpenseDB extends Dexie {
   }
 
   async getTotalByType(type: 'expense' | 'income', startDate?: string, endDate?: string): Promise<number> {
-    let collection = this.transactions.filter((t) => t.type === type);
-    const arr = await collection.toArray();
-    if (startDate && endDate) {
-      return arr
-        .filter((t) => t.date >= startDate && t.date <= endDate)
-        .reduce((sum, t) => sum + t.amount, 0);
-    }
+    const sd = startDate || Dexie.minKey;
+    const ed = endDate || Dexie.maxKey;
+    const arr = await this.transactions
+      .where('[type+date]')
+      .between([type, sd], [type, ed], true, true)
+      .toArray();
     return arr.reduce((sum, t) => sum + t.amount, 0);
   }
 
   async getCategoryBreakdown(startDate: string, endDate: string): Promise<{ category: string; total: number }[]> {
     const expenses = await this.transactions
-      .where('date')
-      .between(startDate, endDate, true, true)
-      .and((t) => t.type === 'expense')
+      .where('[type+date]')
+      .between(['expense', startDate], ['expense', endDate], true, true)
       .toArray();
 
     const breakdown: Record<string, number> = {};
@@ -78,9 +76,15 @@ function getDatesInRange(start: string, end: string): string[] {
   const dates: string[] = [];
   const current = new Date(start + 'T00:00:00');
   const endDate = new Date(end + 'T00:00:00');
-  while (current <= endDate) {
-    dates.push(current.toISOString().split('T')[0]);
+  const limit = 365;
+  let count = 0;
+  while (current <= endDate && count < limit) {
+    const y = current.getFullYear();
+    const m = `${current.getMonth() + 1}`.padStart(2, '0');
+    const d = `${current.getDate()}`.padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
     current.setDate(current.getDate() + 1);
+    count++;
   }
   return dates;
 }

@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { parseSMS, parseMultipleSMS } from '../utils/smsParser';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import type { SMSResult } from '../types';
-import { useTransactions } from '../hooks/useTransactions';
+import type { SMSResult, Transaction } from '../types';
+import { db } from '../db';
 import { isNativePlatform } from '../utils/platform';
 import SmsReader from '../plugins/sms-reader';
 
@@ -13,19 +13,48 @@ export default function SmartSMSReader() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
-  const { addTransaction } = useTransactions();
 
   const isNative = isNativePlatform();
 
-  // On native Android, check/request permission on mount
-  useEffect(() => {
-    if (!isNative) return;
-    SmsReader.checkPermission().then((res) => {
-      setPermissionGranted(res.granted);
-    });
-  }, [isNative]);
+  const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
+    await db.transactions.add({ ...t, createdAt: new Date().toISOString() });
+  }, []);
 
-  const requestSmsPermission = async () => {
+  const handleImport = useCallback((result: SMSResult, index: number) => {
+    const key = `${result.date}-${result.amount}-${result.merchant || 'nomerchant'}-${index}`;
+    if (importedIds.has(key)) return;
+    addTransaction({
+      amount: result.amount,
+      type: result.type,
+      category: result.category,
+      description: result.description,
+      date: result.date,
+      source: 'sms',
+      smsText: result.raw,
+    });
+    setImportedIds((prev) => new Set([...prev, key]));
+  }, [importedIds, addTransaction]);
+
+  const handleParse = useCallback(() => {
+    if (!smsText.trim()) return;
+    const lines = smsText.split(/\n{2,}/).filter((l) => l.trim());
+    const parsed = lines.length > 1 ? parseMultipleSMS(lines) : [parseSMS(smsText)].filter(Boolean) as SMSResult[];
+    setResults(parsed);
+    setMessage(
+      parsed.length > 0
+        ? `Found ${parsed.length} transaction(s)`
+        : 'No transactions detected. Try pasting a bank/UPI SMS.'
+    );
+  }, [smsText]);
+
+  const handleClear = useCallback(() => {
+    setSmsText('');
+    setResults([]);
+    setImportedIds(new Set());
+    setMessage('');
+  }, []);
+
+  const requestSmsPermission = useCallback(async () => {
     if (!isNative) return;
     const res = await SmsReader.requestPermission();
     setPermissionGranted(res.granted);
@@ -34,9 +63,9 @@ export default function SmartSMSReader() {
     } else {
       setMessage('SMS permission denied. You can still paste SMS manually below.');
     }
-  };
+  }, [isNative]);
 
-  const scanDeviceSms = async () => {
+  const scanDeviceSms = useCallback(async () => {
     if (!isNative || !permissionGranted) return;
     setLoading(true);
     setMessage('Scanning SMS inbox for transactions...');
@@ -55,48 +84,12 @@ export default function SmartSMSReader() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Manual paste parsing
-  const handleParse = () => {
-    if (!smsText.trim()) return;
-    const lines = smsText.split(/\n{2,}/).filter((l) => l.trim());
-    const parsed = lines.length > 1 ? parseMultipleSMS(lines) : [parseSMS(smsText)].filter(Boolean) as SMSResult[];
-    setResults(parsed);
-    setMessage(
-      parsed.length > 0
-        ? `Found ${parsed.length} transaction(s)`
-        : 'No transactions detected. Try pasting a bank/UPI SMS.'
-    );
-  };
-
-  const handleImport = (result: SMSResult, index: number) => {
-    const key = `${result.date}-${result.amount}-${result.merchant || 'nomerchant'}-${index}`;
-    if (importedIds.has(key)) return;
-    addTransaction({
-      amount: result.amount,
-      type: result.type,
-      category: result.category,
-      description: result.description,
-      date: result.date,
-      source: 'sms',
-      smsText: result.raw,
-    });
-    setImportedIds((prev) => new Set([...prev, key]));
-  };
-
-  const handleClear = () => {
-    setSmsText('');
-    setResults([]);
-    setImportedIds(new Set());
-    setMessage('');
-  };
+  }, [isNative, permissionGranted]);
 
   const importedCount = importedIds.size;
 
   return (
     <div className="space-y-4">
-      {/* Native SMS Scan Section */}
       {isNative && (
         <div className="bg-gradient-to-br from-primary-500 to-purple-600 rounded-2xl p-5 text-white">
           <h3 className="text-lg font-bold mb-1">📱 Auto-Scan SMS</h3>
@@ -130,7 +123,6 @@ export default function SmartSMSReader() {
         </div>
       )}
 
-      {/* Manual Paste Section */}
       <div className={isNative ? 'bg-white rounded-2xl border border-gray-100 p-5' : ''}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-900">
@@ -182,7 +174,6 @@ export default function SmartSMSReader() {
         </p>
       )}
 
-      {/* Results */}
       {results.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-gray-900">
@@ -193,7 +184,7 @@ export default function SmartSMSReader() {
             const imported = importedIds.has(key);
             return (
               <div
-                key={i}
+                key={key}
                 className={`bg-white rounded-xl border p-4 transition-all ${
                   imported ? 'border-income-500/30 bg-green-50/50' : 'border-gray-100'
                 }`}
@@ -243,7 +234,6 @@ export default function SmartSMSReader() {
         </div>
       )}
 
-      {/* Sample SMS */}
       {!results.length && !loading && (
         <div className="mt-6">
           <h4 className="text-sm font-medium text-gray-500 mb-2">Sample SMS formats to try:</h4>

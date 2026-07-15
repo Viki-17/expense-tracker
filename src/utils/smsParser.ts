@@ -1,5 +1,13 @@
 import type { SMSResult } from '../types';
 
+function formatLocalDate(year: number, month: number, day: number): string {
+  return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+}
+
+function cleanMerchant(name: string): string {
+  return name.replace(/[.,;:'"!?]+$/, '').trim();
+}
+
 interface SMSRule {
   name: string;
   patterns: RegExp[];
@@ -9,49 +17,37 @@ interface SMSRule {
 
 const BANK_RULES: SMSRule[] = [
   {
-    name: 'Generic Debit/Credit',
+    name: 'Salary Credit',
     patterns: [
-      /(?:debited|spent|paid|withdrawn|purchase(?:d)?\s+(?:at|of|from)?)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
-      /(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:debited|spent|paid|deducted)/i,
-      /(?:credited|received|added|deposited)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
-      /(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:credited|received|added)/i,
+      /(?:salary|stipend|payslip)/i,
     ],
-    category: 'Other',
-    type: 'expense',
-  },
-  {
-    name: 'UPI Payment',
-    patterns: [
-      /UPI.*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*.*?(?:to|at)\s+(.+?)(?:\s+(?:on|at|ref|Ref|UPI|\.|$))/i,
-      /(?:sent|paid|transferred)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:to|via)\s+(.+?)(?:\s+(?:on|at|from|\.|$))/i,
-      /(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*.*?(?:sent|paid)\s*(?:to|via|using)\s+(.+?)(?:\s+(?:on|at|from|\.|Ref|$))/i,
-    ],
-    category: 'Other',
-    type: 'expense',
-  },
-  {
-    name: 'UPI Credit',
-    patterns: [
-      /UPI.*?(?:received|credited).*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
-      /(?:received|credited)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:from|via)\s+(.+?)(?:\s+(?:on|at|UPI|\.|Ref|$))/i,
-    ],
-    category: 'Other',
+    category: 'Salary',
     type: 'income',
   },
   {
-    name: 'Card Payment',
+    name: 'NACH / Standing Instruction',
     patterns: [
-      /(?:card\s*(?:no|number)\s*(?:\*+|\d+)?\s*|credit\s*card|debit\s*card).*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*.*?(?:at|on)\s+(.+?)(?:\s+(?:on|at|\.|Ref|$))/i,
-      /(?:swiped\s*(?:for|at)|transaction\s*(?:at|on))\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:at|on)\s+(.+?)(?:\s+(?:on|at|\.|Ref|$))/i,
+      /NACH\s+debit/i,
+      /standing\s+instruction/i,
+      /mandate\s+debit/i,
+      /ECS\s+(?:debit|payment)/i,
+      /auto\s*debit/i,
     ],
-    category: 'Shopping',
+    category: 'Bills & Utilities',
     type: 'expense',
   },
   {
-    name: 'ATM Withdrawal',
+    name: 'EMI / Loan',
     patterns: [
-      /ATM.*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
-      /(?:withdraw|withdrawn|cash\s*withdrawal).*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+      /(?:emi|loan|interest|installment|repayment|finance)/i,
+    ],
+    category: 'Bills & Utilities',
+    type: 'expense',
+  },
+  {
+    name: 'Bills',
+    patterns: [
+      /(?:electricity|bill|recharge|mobile|broadband|wifi|dth|gas\s*(?:bill|connection)|water)/i,
     ],
     category: 'Bills & Utilities',
     type: 'expense',
@@ -59,7 +55,7 @@ const BANK_RULES: SMSRule[] = [
   {
     name: 'Food / Restaurant',
     patterns: [
-      /(?:zomato|swiggy|restaurant|food|cafe|hotel.*?(?:meal|dining|food|restaurant))/i,
+      /(?:zomato|swiggy|restaurant|snacks|food|cafe|hotel.*?(?:meal|dining|food|restaurant)|bake|sweet|dhaba|bar|pub)/i,
     ],
     category: 'Food & Dining',
     type: 'expense',
@@ -67,7 +63,7 @@ const BANK_RULES: SMSRule[] = [
   {
     name: 'Grocery',
     patterns: [
-      /(?:grocery|supermarket|big\s*basket|blinkit|zepto|instamart|dmart|more\s*store|reliance\s*fresh)/i,
+      /(?:grocery|supermarket|big\s*basket|blinkit|zepto|instamart|dmart|more\s*store|reliance\s*fresh|kirana|mart\b)/i,
     ],
     category: 'Groceries',
     type: 'expense',
@@ -97,27 +93,51 @@ const BANK_RULES: SMSRule[] = [
     type: 'expense',
   },
   {
-    name: 'Bills',
+    name: 'ATM Withdrawal',
     patterns: [
-      /(?:electricity|bill|recharge|mobile|broadband|wifi|dth|gas\s*(?:bill|connection)|water)/i,
+      /ATM.*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+      /(?:withdraw|withdrawn|cash\s*withdrawal).*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
     ],
     category: 'Bills & Utilities',
     type: 'expense',
   },
   {
-    name: 'Salary Credit',
+    name: 'UPI Credit',
     patterns: [
-      /(?:salary|stipend|payslip)/i,
+      /UPI.*?(?:received|credited).*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+      /(?:received|credited)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:from|via)\s+(.+?)(?:\s+(?:on|at|UPI|\.|Ref|$))/i,
     ],
-    category: 'Salary',
+    category: 'Other',
     type: 'income',
   },
   {
-    name: 'EMI / Loan',
+    name: 'UPI Payment',
     patterns: [
-      /(?:emi|loan|interest|installment|repayment|finance)/i,
+      /UPI.*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*.*?(?:to|at)\s+(.+?)(?:\s+(?:on|at|ref|Ref|UPI|\.|$))/i,
+      /(?:sent|paid|transferred)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:to|via)\s+(.+?)(?:\s+(?:on|at|from|\.|$))/i,
+      /(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*.*?(?:sent|paid)\s*(?:to|via|using)\s+(.+?)(?:\s+(?:on|at|from|\.|Ref|$))/i,
     ],
-    category: 'Bills & Utilities',
+    category: 'Other',
+    type: 'expense',
+  },
+  {
+    name: 'Card Payment',
+    patterns: [
+      /(?:card\s*(?:no|number)\s*(?:\*+|\d+)?\s*|credit\s*card|debit\s*card).*?(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*.*?(?:at|on)\s+(.+?)(?:\s+(?:on|at|\.|Ref|$))/i,
+      /(?:swiped\s*(?:for|at)|transaction\s*(?:at|on))\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:at|on)\s+(.+?)(?:\s+(?:on|at|\.|Ref|$))/i,
+    ],
+    category: 'Shopping',
+    type: 'expense',
+  },
+  {
+    name: 'Generic Debit/Credit',
+    patterns: [
+      /(?:debited|debit\b|spent|paid|withdrawn|purchase(?:d)?\s+(?:at|of|from)?)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+      /(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:debited|debit\b|spent|paid|deducted)/i,
+      /(?:credited|received|added|deposited)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+      /(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)\s*(?:credited|received|added)/i,
+    ],
+    category: 'Other',
     type: 'expense',
   },
 ];
@@ -177,11 +197,22 @@ export function parseSMS(message: string): SMSResult | null {
   if (!amount || amount <= 0) return null;
 
   // Determine if debit or credit
-  if (/(?:credited|received|added|deposited|salary|stipend|refund|cashback)/i.test(cleaned)) {
+  // Check debit keywords first — many Indian SMS mention beneficiary "credited" in debit context
+  const isDebit = /(?:debit(?:\b|ed|s?\s)|spent|paid|withdrawn|deducted|purchase|nach)/i.test(cleaned);
+  const isCredit = /(?:credited|received|added|deposited|salary|stipend|refund|cashback)/i.test(cleaned);
+
+  if (isDebit && !isCredit) {
+    type = 'expense';
+    confidence += 20;
+  } else if (isCredit && !isDebit) {
     type = 'income';
     confidence += 20;
-  } else if (/(?:debited|spent|paid|withdrawn|deducted|purchase)/i.test(cleaned)) {
+  } else if (isDebit) {
+    // Both debit and credit keywords found → prefer debit (beneficiary "credited" is not user income)
     type = 'expense';
+    confidence += 20;
+  } else if (isCredit) {
+    type = 'income';
     confidence += 20;
   }
 
@@ -207,12 +238,66 @@ export function parseSMS(message: string): SMSResult | null {
     }
   }
 
-  // Try to extract merchant from "at <merchant>" or "to <merchant>" patterns
+  // Extract merchant from UPI/P2M reference (e.g., UPI/P2M/520087032006/DK SNACKS)
+  if (!merchant) {
+    const upiRefMatch = cleaned.match(/(?:UPI|VPA)[\s:\-/]+(?:P2M|P2P|P2A)?[\s:\-/]*\d+[\s:\-/]+([A-Za-z][A-Za-z0-9\s&.\-_@]{2,30}?)(?:\s+(?:on|at|for|Ref|UPI|Not|SMS|Call|\.|,|$)|$)/i);
+    if (upiRefMatch) {
+      merchant = cleanMerchant(upiRefMatch[1]);
+      if (merchant.length >= 2) confidence += 10;
+    }
+  }
+
+  // Extract merchant from "at/to/via/from/on/towards <merchant>" patterns
+  if (!merchant) {
+    const merchantMatch = cleaned.match(
+      /(?:at|to|via|from|towards)\s+([A-Za-z][A-Za-z0-9\s&.\-_'()]{2,30}?)(?:\s+(?:on|at|for|Ref|UPI|Not|SMS|Call|Avl|\.(?:\s|$)|$))/i
+    );
+    if (merchantMatch) {
+      const candidate = cleanMerchant(merchantMatch[1]);
+      if (candidate.length >= 2 && !/^\d{1,2}[-/ ]/.test(candidate)) {
+        merchant = candidate;
+        confidence += 10;
+      }
+    }
+  }
+
+  // Extract merchant from "on <merchant>" when preceded by a year/date (e.g., "...on 11-Jul-26 on MOON MART")
+  if (!merchant) {
+    const onMerchantMatch = cleaned.match(/(?:'?\d{2}|20\d{2})\s+on\s+([A-Za-z][A-Za-z0-9\s&.\-_'()]{2,30}?)(?:\s+(?:Avl|avl|Not|SMS|Call|on|at|for|Ref|UPI|\.(?:\s|$)|$))/i);
+    if (onMerchantMatch) {
+      const candidate = cleanMerchant(onMerchantMatch[1]);
+      if (candidate.length >= 2) {
+        merchant = candidate;
+        confidence += 10;
+      }
+    }
+  }
+
+  // Extract payee name from "X credited" in debit context (e.g., "...debited for Rs X... ; DIVYA BHARATHII credited")
+  if (!merchant && type === 'expense') {
+    const payeeMatch = cleaned.match(/([A-Za-z][A-Za-z0-9\s&.\-_'()]{3,25})\s+(?:credited|received|beneficiary)/i);
+    if (payeeMatch) {
+      merchant = cleanMerchant(payeeMatch[1]);
+      confidence += 5;
+    }
+  }
+
+  // Extract from UPI ID (e.g., UPI:640023505610 or upi://...)
+  if (!merchant) {
+    const upiIdMatch = cleaned.match(/(?:UPI|upi)[\s:\-/]+([A-Za-z][A-Za-z0-9@.\-_]{4,30})/i);
+    if (upiIdMatch && !/^\d+$/.test(upiIdMatch[1])) {
+      merchant = upiIdMatch[1].trim();
+    }
+  }
+
+  // Try to extract merchant from "at <merchant>" or "to <merchant>" patterns (original fallback, less strict)
   if (!merchant) {
     const merchantMatch = cleaned.match(/(?:at|to|via|from)\s+([A-Za-z0-9\s&.]+?)(?:\s+(?:on|at|for|Ref|UPI|\.(?:\s|$)|$))/i);
     if (merchantMatch) {
-      merchant = merchantMatch[1].trim();
-      if (merchant.length > 25) merchant = merchant.slice(0, 25);
+      const candidate = merchantMatch[1].trim();
+      if (candidate.length <= 25 && !/^\d{1,2}[-/ ]/.test(candidate) && candidate.length > 1) {
+        merchant = candidate;
+      }
     }
   }
 
@@ -269,9 +354,7 @@ function parseDate(dateStr: string): string | null {
       if (year < 100) year += 2000;
       if (month < 1 || month > 12 || day < 1 || day > 31) return null;
 
-      const d = new Date(year, month - 1, day);
-      if (isNaN(d.getTime())) return null;
-      return d.toISOString().split('T')[0];
+      return formatLocalDate(year, month, day);
     }
   } catch {
     return null;

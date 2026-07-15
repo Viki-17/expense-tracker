@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { db, DEFAULT_CATEGORIES } from '../db';
-import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 
 export default function Settings() {
-  const { transactions } = useTransactions();
   const { categories, addCategory } = useCategories();
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('📌');
   const [newCatColor, setNewCatColor] = useState('#6366f1');
   const [exportStatus, setExportStatus] = useState('');
 
-  const handleExport = () => {
+  const handleExport = useCallback(async () => {
+    const transactions = await db.transactions.toArray();
     const data = { transactions, categories, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -22,9 +21,9 @@ export default function Settings() {
     URL.revokeObjectURL(url);
     setExportStatus('Exported successfully!');
     setTimeout(() => setExportStatus(''), 3000);
-  };
+  }, [categories]);
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -48,27 +47,26 @@ export default function Settings() {
       }
     };
     reader.readAsText(file);
-  };
+  }, []);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     if (!confirm('This will delete ALL your data. Are you sure?')) return;
     await db.transactions.clear();
     await db.categories.clear();
     await db.categories.bulkAdd(DEFAULT_CATEGORIES);
     window.location.reload();
-  };
+  }, []);
 
-  const handleAddCategory = async () => {
+  const handleAddCategory = useCallback(async () => {
     if (!newCatName.trim()) return;
     await addCategory({ name: newCatName.trim(), icon: newCatIcon, color: newCatColor });
     setNewCatName('');
     setNewCatIcon('📌');
     setNewCatColor('#6366f1');
-  };
+  }, [newCatName, newCatIcon, newCatColor, addCategory]);
 
   return (
     <div className="space-y-4">
-      {/* Data Management */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Data Management</h3>
         <div className="space-y-3">
@@ -94,7 +92,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Add Category */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Add Custom Category</h3>
         <div className="flex gap-2">
@@ -127,7 +124,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Current Categories */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Categories ({categories.length})</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -144,7 +140,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* App Info */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-2">About</h3>
         <p className="text-sm text-gray-500">Expense Tracker PWA v1.0.0</p>

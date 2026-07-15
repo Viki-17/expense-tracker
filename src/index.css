@@ -13,18 +13,6 @@
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 }
 
-:root {
-  --animate-slide-up: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-slide-up { animation: var(--animate-slide-up); }
-
-/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }

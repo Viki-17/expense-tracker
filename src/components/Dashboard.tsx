@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useTransactionStats } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
-import { formatCurrency, startOfMonth, endOfMonth, today, startOfWeek, daysAgo } from '../utils/formatters';
+import { formatCurrency, startOfMonth, endOfMonth, today, startOfWeek } from '../utils/formatters';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { DateRange } from '../types';
 
@@ -20,29 +20,53 @@ export default function Dashboard() {
 
   const stats = useTransactionStats(rangeDates.start, rangeDates.end);
 
+  const categoryMap = useMemo(() => {
+    const map = new Map(categories.map((c) => [c.name, c]));
+    return map;
+  }, [categories]);
+
+  const pieData = useMemo(() => {
+    const breakdown = stats?.breakdown || [];
+    return breakdown.map((b) => ({
+      name: b.category,
+      value: b.total,
+      color: categoryMap.get(b.category)?.color || '#64748b',
+    }));
+  }, [stats?.breakdown, categoryMap]);
+
+  const barData = useMemo(() => {
+    const dailyTotals = stats?.dailyTotals || [];
+    const capped = range === 'all' ? dailyTotals.slice(-90) : dailyTotals;
+    return capped.map((d) => ({
+      date: `${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`,
+      expense: d.expense,
+      income: d.income,
+    }));
+  }, [stats?.dailyTotals, range]);
+
+  const formatTooltip = useCallback((value: number) => `₹${value.toLocaleString('en-IN')}`, []);
+
   if (!stats) {
-    return <div className="animate-pulse space-y-4">{/* skeleton */}</div>;
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-9 w-48 bg-gray-200 rounded-lg" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 bg-gray-200 rounded-2xl" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="h-64 bg-gray-200 rounded-2xl" />
+          <div className="h-64 bg-gray-200 rounded-2xl" />
+        </div>
+      </div>
+    );
   }
 
-  const { totalExpense, totalIncome, breakdown, dailyTotals, net } = stats;
-
-  const pieData = breakdown.map((b) => ({
-    name: b.category,
-    value: b.total,
-    color: categories.find((c) => c.name === b.category)?.color || '#64748b',
-  }));
-
-  const barData = dailyTotals.map((d) => ({
-    date: new Date(d.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-    expense: d.expense,
-    income: d.income,
-  }));
-
-  const formatTooltip = (value: number) => `₹${value.toLocaleString('en-IN')}`;
+  const { totalExpense, totalIncome, breakdown, net } = stats;
 
   return (
     <div className="space-y-5">
-      {/* Range selector */}
       <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
         {(['week', 'month', 'year', 'all'] as DateRange[]).map((r) => (
           <button
@@ -57,32 +81,21 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <SummaryCard label="Expenses" amount={totalExpense} color="text-expense-500" icon="💸" />
         <SummaryCard label="Income" amount={totalIncome} color="text-income-500" icon="💰" />
         <SummaryCard label="Net" amount={net} color={net >= 0 ? 'text-income-500' : 'text-expense-500'} icon="📊" />
-        <SummaryCard label="Transactions" amount={breakdown.reduce((s, b) => s + 1, 0)} color="text-primary-600" icon="📝" isCount />
+        <SummaryCard label="Transactions" amount={breakdown.reduce((s) => s + 1, 0)} color="text-primary-600" icon="📝" isCount />
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Category Breakdown Pie */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Category Breakdown</h3>
           {pieData.length > 0 ? (
             <div className="flex flex-col items-center">
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={2} dataKey="value">
                     {pieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} stroke="none" />
                     ))}
@@ -105,18 +118,17 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Daily Trend Bar Chart */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Daily Trend</h3>
           {barData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={barData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#94a3b8" tickLine={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="#94a3b8" tickLine={false} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" tickLine={false} axisLine={false} />
                 <Tooltip formatter={formatTooltip} />
-                <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={range === 'year' ? 16 : 24} />
-                <Bar dataKey="income" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={range === 'year' ? 16 : 24} />
+                <Bar dataKey="expense" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={range === 'year' || range === 'all' ? 16 : 24} />
+                <Bar dataKey="income" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={range === 'year' || range === 'all' ? 16 : 24} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -125,13 +137,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Top Spending Categories */}
       {breakdown.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Top Spending Categories</h3>
           <div className="space-y-3">
             {breakdown.slice(0, 5).map((b) => {
-              const cat = categories.find((c) => c.name === b.category);
+              const cat = categoryMap.get(b.category);
               const pct = totalExpense > 0 ? (b.total / totalExpense) * 100 : 0;
               return (
                 <div key={b.category}>
