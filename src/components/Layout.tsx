@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-64 min-w-0">
         <main className="relative flex-1 overflow-hidden">
           <div className="absolute inset-0 overflow-y-auto lg:overflow-y-auto pb-28 lg:pb-8 scroll-y">
-            <div className="max-w-4xl mx-auto py-4 lg:px-8 lg:py-8 min-h-full">
+            <div className="max-w-4xl mx-auto px-3 py-4 lg:px-8 lg:py-8 min-h-full">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={location.pathname}

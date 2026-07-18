@@ -101,7 +101,7 @@ export default function Dashboard() {
         }
       />
 
-      <div className="pt-4 w-full lg:max-w-2xl lg:mx-auto">
+      <div className="px-3 pt-4 w-full lg:max-w-2xl lg:mx-auto">
         {/* Month navigator */}
         <div className="flex items-center justify-center gap-3 mb-4">
           <button onClick={handlePrev} className="tap p-2 rounded-full text-tertiary hover:text-label active:scale-90">
@@ -143,7 +143,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Tabs */}
-        <div className="border-b border-separator/60 mb-2 px-4 sticky top-0 bg-canvas/90 backdrop-blur-xl z-20">
+        <div className="border-b border-separator/60 mb-2 -mx-3 px-3 sticky top-0 bg-canvas/90 backdrop-blur-xl z-20">
           <Tabs tabs={tabs} value={tab} onChange={setTab} />
         </div>
 
