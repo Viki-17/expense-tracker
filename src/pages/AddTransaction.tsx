@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '../hooks/useCategories';
-import { useTransactions } from '../hooks/useTransactions';
+import { db } from '../db';
 import type { Transaction } from '../types';
 import { today } from '../utils/formatters';
 import { TopBar } from '../components/ui/TopBar';
@@ -16,8 +16,10 @@ const EXCLUDED_FROM_EXPENSE = new Set(['Salary', 'Freelance', 'Investment']);
 
 export default function AddTransaction() {
   const { categories } = useCategories();
-  const { addTransaction } = useTransactions();
   const navigate = useNavigate();
+  const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
+    await db.transactions.add({ ...t, createdAt: new Date().toISOString() });
+  }, []);
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [category, setCategory] = useState('Other');

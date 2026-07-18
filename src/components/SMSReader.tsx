@@ -78,7 +78,7 @@ export default function SmartSMSReader() {
   useEffect(() => {
     if (!isNative) return;
     SmsReader.checkPermission().then((res) => {
-      setPermissionGranted(res.granted);
+      setPermissionGranted((prev) => prev || res.granted);
     });
   }, [isNative]);
 
@@ -104,6 +104,7 @@ export default function SmartSMSReader() {
       type: result.type,
       category: result.category,
       description: result.description,
+      merchant: result.merchant,
       date: result.date,
       source: 'sms',
       smsText: result.raw,
@@ -252,6 +253,7 @@ export default function SmartSMSReader() {
               type: result.type,
               category: result.category,
               description: result.description,
+              merchant: result.merchant,
               date: result.date,
               source: 'sms',
               smsText: result.raw,

@@ -55,6 +55,36 @@ export class ExpenseDB extends Dexie {
       .sort((a, b) => b.total - a.total);
   }
 
+  async getMonthlyTotals(months?: number): Promise<{ month: string; expense: number; income: number }[]> {
+    const maxMonths = months || 90;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - maxMonths + 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const sd = start.toISOString().split('T')[0];
+    const ed = end.toISOString().split('T')[0];
+    const transactions = await this.transactions
+      .where('date')
+      .between(sd, ed, true, true)
+      .toArray();
+    const map = new Map<string, { expense: number; income: number }>();
+    for (const t of transactions) {
+      const m = t.date.slice(0, 7);
+      const cur = map.get(m) || { expense: 0, income: 0 };
+      if (t.type === 'expense') cur.expense += t.amount;
+      else cur.income += t.amount;
+      map.set(m, cur);
+    }
+    const result: { month: string; expense: number; income: number }[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+      const val = map.get(key);
+      result.push({ month: key, expense: val?.expense || 0, income: val?.income || 0 });
+      current.setMonth(current.getMonth() + 1);
+    }
+    return result;
+  }
+
   async getDailyTotals(startDate: string, endDate: string): Promise<{ date: string; expense: number; income: number }[]> {
     const transactions = await this.getTransactionsInRange(startDate, endDate);
     const map: Record<string, { date: string; expense: number; income: number }> = {};

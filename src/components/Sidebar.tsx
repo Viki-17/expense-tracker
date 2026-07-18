@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { HomeIcon, ListBulletIcon, PlusCircleIcon, EnvelopeIcon, ChartBarIcon, CogIcon } from './Icons';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: HomeIcon },
+  { to: '/', label: 'Transactions', icon: HomeIcon },
   { to: '/transactions', label: 'Transactions', icon: ListBulletIcon },
   { to: '/add', label: 'Add Transaction', icon: PlusCircleIcon },
   { to: '/sms', label: 'SMS Import', icon: EnvelopeIcon },

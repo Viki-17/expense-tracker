@@ -41,6 +41,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
       type,
       category,
       description: description || category,
+      merchant: description || category,
       date,
       source: 'manual',
     });

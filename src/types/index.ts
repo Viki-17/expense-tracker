@@ -4,6 +4,7 @@ export interface Transaction {
   type: 'expense' | 'income';
   category: string;
   description: string;
+  merchant?: string;
   date: string;
   source: 'manual' | 'sms';
   smsText?: string;
