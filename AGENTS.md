@@ -6,11 +6,12 @@
 - All data-intensive values (`filtered`, `total`, `pieData`, `barData`) must be wrapped in `useMemo`
 - All handler functions passed as props must be wrapped in `useCallback`
 - Components should render nothing beyond what's visible (list virtualization preferred for 100+ items)
+- The all-time transaction list uses `react-window` `FixedSizeList` for virtualization
 - Database queries must use indexed queries — never `filter()` on the full table
 - `useLiveQuery` subscriptions should be scoped; never subscribe to the full `transactions` table when only needing a mutator function
 - Route-based code splitting via `React.lazy` is enabled — new pages should follow the lazy import pattern
 - Charts (Recharts) must cap data points to max 90 for all-time ranges
-- CSS animations on navigation are removed (costly on mobile)
+- Page transitions use `framer-motion` with `transform`/`opacity` only and respect `prefers-reduced-motion`
 
 ## Stack
 
@@ -19,12 +20,14 @@
 | Framework | React | 18.3 |
 | Build | Vite | 5.4 |
 | Language | TypeScript | 5.6 (strict mode) |
-| Styling | Tailwind CSS | 3.4 |
+| Styling | Tailwind CSS | 3.4 (darkMode: 'class') |
 | Native wrapper | Capacitor | 8.4.1 (Android) |
 | PWA | vite-plugin-pwa | 0.20.5 |
 | Charts | Recharts | 2.12 |
 | Local DB | Dexie.js (IndexedDB) | 4.0 + dexie-react-hooks 1.1 |
 | Routing | React Router DOM | 6.26 |
+| Animation | framer-motion | 11.x |
+| Virtualization | react-window | 1.8 |
 | Package manager | npm | — |
 
 ## Project Identity
@@ -42,8 +45,10 @@
 ├── vite.config.ts            # Vite + React + PWA plugin
 ├── capacitor.config.ts       # Capacitor 8 config (appId: com.expensetracker.app)
 ├── tsconfig.json             # ES2020, bundler mode, strict, isolatedModules
-├── tailwind.config.js        # Custom primary/expense/income color scales, Inter font
+├── tailwind.config.js        # Custom semantic tokens (canvas/surface/label/etc.), darkMode: 'class', Inter font
 ├── postcss.config.js
+├── src/theme-init.ts         # Applies initial theme before React render
+├── src/contexts/ThemeProvider.tsx
 ├── scripts/
 │   ├── generate-icons.mjs    # sharp-based PNG icon generator from SVG
 │   └── setup-android.sh      # One-time Android project setup script
@@ -54,9 +59,9 @@
 │       ├── app/MainActivity.java              # Registers SmsReaderPlugin
 │       └── plugins/SmsReaderPlugin.java       # Capacitor plugin: reads SMS inbox
 └── src/
-    ├── main.tsx              # React entry, BrowserRouter with optional VITE_ROUTER_BASE
+    ├── main.tsx              # React entry, BrowserRouter + ThemeProvider
     ├── App.tsx               # 6 routes, all wrapped in <Layout>
-    ├── index.css             # Tailwind directives, safe-area CSS, slideUp animation
+    ├── index.css             # Tailwind directives, safe-area CSS, semantic CSS variables, scroll utilities
     ├── vite-env.d.ts
     ├── types/index.ts        # Transaction, Category, SMSResult, BudgetSummary, DateRange, SortField
     ├── db/index.ts           # Dexie schema: transactions (++id,type,category,date,amount), categories (++id,name)
@@ -72,21 +77,22 @@
     │   ├── index.ts             # registerPlugin('SmsReader') with web fallback
     │   └── web.ts               # WebPlugin fallback (returns empty / denied for web)
     ├── components/
-    │   ├── Layout.tsx           # Desktop sidebar (lg:block) + mobile bottom nav + header
+    │   ├── Layout.tsx           # Shell: desktop sidebar + mobile bottom nav + page transition wrapper
     │   ├── Sidebar.tsx          # 6 nav items, fixed 256px left sidebar
     │   ├── BottomNav.tsx        # 5-item mobile bottom tab bar
-    │   ├── Dashboard.tsx        # Summary cards, Recharts pie + bar charts, date range picker
+    │   ├── Dashboard.tsx        # Apple HIG-style dashboard: month picker, tabs, spend ring, transactions/categories/merchants
     │   ├── TransactionForm.tsx  # Amount/category/description/date, full + compact modes
-    │   ├── TransactionList.tsx  # Filterable (all/expense/income), sortable, deletable list
+    │   ├── TransactionList.tsx  # All-time virtualized transaction list (react-window), filterable/sortable/deletable
     │   ├── SMSReader.tsx        # Native scan (SmsReader plugin) + manual SMS paste/parse UI
-    │   └── Icons.tsx            # SVG icon components (Heroicons-style)
+    │   ├── Icons.tsx            # SVG icon components (Heroicons-style)
+    │   └── ui/                  # Reusable primitives: Button, Card, Avatar, Tabs, TopBar, VirtualList, etc.
     └── pages/
         ├── Home.tsx             # → <Dashboard />
         ├── Transactions.tsx     # → <TransactionList />
-        ├── AddTransaction.tsx   # → <TransactionForm />, navigates to /transactions on submit
+        ├── AddTransaction.tsx   # Standalone add transaction page, navigates to /transactions on submit
         ├── SMSImport.tsx        # → <SmartSMSReader />
         ├── Budgets.tsx          # Per-category monthly budget tracking with progress bars
-        └── Settings.tsx         # Export/import JSON, reset data, add custom categories, app info
+        └── Settings.tsx         # Export/import JSON, reset data, add custom categories, theme toggle, app info
 ```
 
 ## Routes
@@ -183,9 +189,10 @@ Running `npx cap add android` (via `npm run cap:add:android`) should regenerate 
 ## Key Conventions
 
 - TypeScript strict mode, `noUnusedLocals: false`, `noUnusedParameters: false`
-- Tailwind arbitrary values widely used (brackets not avoided)
+- Tailwind `darkMode: 'class'` with CSS-variable semantic tokens (`canvas`, `surface`, `label`, `tertiary`, `separator`, `accent`, `danger`, `success`)
 - `base: './'` in Vite (relative asset paths — required for Capacitor)
-- UI: rounded-2xl cards, gray-50 bg, primary-500 indigo accent
+- UI: Apple HIG-style dark-first with true-black page background, elevated surfaces, rounded-2xl cards, accent-blue CTA
+- Category avatars use color-tinted letter initials (emoji icons are legacy)
 - Import aliases: none configured (no `@/` or `~` paths — all relative)
 - No linter/formatter configured in project (no eslint/prettier)
 - All data is local-first; no API integration exists

@@ -48,3 +48,27 @@ export function daysAgo(n: number): string {
   d.setDate(d.getDate() - n);
   return d.toISOString().split('T')[0];
 }
+
+export function startOfMonthFor(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+}
+
+export function endOfMonthFor(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+}
+
+export function shiftMonth(d: Date, delta: number): Date {
+  return new Date(d.getFullYear(), d.getMonth() + delta, 1);
+}
+
+export function monthLabel(d: Date): string {
+  return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+}
+
+export function shortMonthLabel(d: Date): string {
+  return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+}
+
+export function isSameMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}

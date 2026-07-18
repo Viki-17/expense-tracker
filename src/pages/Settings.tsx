@@ -1,12 +1,21 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db, DEFAULT_CATEGORIES } from '../db';
 import { useCategories } from '../hooks/useCategories';
+import { useTheme } from '../contexts/ThemeProvider';
 import { getAutoImportMerchants, removeAutoImportMerchant } from '../utils/autoImport';
+import { TopBar } from '../components/ui/TopBar';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Field';
+import { IconButton } from '../components/ui/IconButton';
+import { ArrowLeftIcon, SunIcon, MoonIcon, DownloadIcon, UploadIcon, TrashIcon } from '../components/Icons';
 
 export default function Settings() {
   const { categories, addCategory } = useCategories();
+  const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
   const [newCatName, setNewCatName] = useState('');
-  const [newCatIcon, setNewCatIcon] = useState('📌');
   const [newCatColor, setNewCatColor] = useState('#6366f1');
   const [exportStatus, setExportStatus] = useState('');
   const [autoMerchants, setAutoMerchants] = useState(getAutoImportMerchants);
@@ -61,131 +70,154 @@ export default function Settings() {
 
   const handleAddCategory = useCallback(async () => {
     if (!newCatName.trim()) return;
-    await addCategory({ name: newCatName.trim(), icon: newCatIcon, color: newCatColor });
+    await addCategory({ name: newCatName.trim(), icon: '#', color: newCatColor });
     setNewCatName('');
-    setNewCatIcon('📌');
     setNewCatColor('#6366f1');
-  }, [newCatName, newCatIcon, newCatColor, addCategory]);
+  }, [newCatName, newCatColor, addCategory]);
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Data Management</h3>
-        <div className="space-y-3">
+    <div>
+      <TopBar
+        title="Settings"
+        leading={
+          <IconButton label="Back" onClick={() => navigate(-1)}>
+            <ArrowLeftIcon className="w-5 h-5" />
+          </IconButton>
+        }
+      />
+      <div className="px-4 max-w-2xl mx-auto w-full pt-4 space-y-4" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
+        {/* Appearance */}
+        <Card>
+          <h3 className="text-sm font-bold text-label mb-3">Appearance</h3>
           <button
-            onClick={handleExport}
-            className="w-full py-3 bg-gray-50 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-100 transition-colors"
+            onClick={toggle}
+            className="tap w-full flex items-center justify-between p-3 rounded-xl bg-surface-2 active:scale-[0.99] transition-transform"
           >
-            📤 Export Data (JSON)
-          </button>
-          <label className="block w-full py-3 bg-gray-50 text-gray-700 rounded-xl font-medium text-sm text-center hover:bg-gray-100 transition-colors cursor-pointer">
-            📥 Import Backup
-            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-          </label>
-          {exportStatus && (
-            <p className="text-sm text-center font-medium text-income-600">{exportStatus}</p>
-          )}
-          <button
-            onClick={handleReset}
-            className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-medium text-sm hover:bg-red-100 transition-colors"
-          >
-            🗑 Reset All Data
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Add Custom Category</h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newCatName}
-            onChange={(e) => setNewCatName(e.target.value)}
-            placeholder="Category name"
-            className="flex-1 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-          />
-          <input
-            type="text"
-            value={newCatIcon}
-            onChange={(e) => setNewCatIcon(e.target.value)}
-            className="w-14 px-2 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-          />
-          <input
-            type="color"
-            value={newCatColor}
-            onChange={(e) => setNewCatColor(e.target.value)}
-            className="w-12 h-11 rounded-xl border border-gray-200 cursor-pointer"
-          />
-          <button
-            onClick={handleAddCategory}
-            disabled={!newCatName.trim()}
-            className="px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-medium hover:bg-primary-600 disabled:opacity-50 transition-colors"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Categories ({categories.length})</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {categories.map((cat) => (
-            <div
-              key={cat.id || cat.name}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-              style={{ backgroundColor: `${cat.color}10` }}
-            >
-              <span>{cat.icon}</span>
-              <span className="text-gray-700">{cat.name}</span>
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? <MoonIcon className="w-5 h-5 text-accent" /> : <SunIcon className="w-5 h-5 text-warning" />}
+              <div className="text-left">
+                <p className="text-sm font-semibold text-label">{theme === 'dark' ? 'Dark' : 'Light'} mode</p>
+                <p className="text-xs text-tertiary">Tap to switch</p>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className={`w-12 h-7 rounded-full p-0.5 transition-colors ${theme === 'dark' ? 'bg-accent' : 'bg-surface-3'}`}>
+              <div className={`w-6 h-6 rounded-full bg-white shadow transition-transform ${theme === 'dark' ? 'translate-x-5' : ''}`} />
+            </div>
+          </button>
+        </Card>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">Auto-Import Merchants</h3>
-        <p className="text-xs text-gray-400 mb-4">
-          SMS from these merchants are auto-imported during periodic scans. Merchants are learned each time you manually import an SMS.
-        </p>
-        {autoMerchants.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">
-            No auto-import merchants yet. Import an SMS manually to add its merchant here.
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {autoMerchants.map((merchant) => (
-              <span
-                key={merchant}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium"
+        {/* Data management */}
+        <Card>
+          <h3 className="text-sm font-bold text-label mb-3">Data Management</h3>
+          <div className="space-y-2">
+            <button
+              onClick={handleExport}
+              className="tap w-full flex items-center gap-3 py-3 px-3 bg-surface-2 text-label rounded-xl font-medium text-sm active:scale-[0.99]"
+            >
+              <DownloadIcon className="w-5 h-5 text-secondary" /> Export Data (JSON)
+            </button>
+            <label className="tap w-full flex items-center gap-3 py-3 px-3 bg-surface-2 text-label rounded-xl font-medium text-sm cursor-pointer active:scale-[0.99]">
+              <UploadIcon className="w-5 h-5 text-secondary" /> Import Backup
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
+            {exportStatus && <p className="text-sm text-center font-medium text-success">{exportStatus}</p>}
+            <button
+              onClick={handleReset}
+              className="tap w-full flex items-center gap-3 py-3 px-3 bg-danger-soft text-danger rounded-xl font-medium text-sm active:scale-[0.99]"
+            >
+              <TrashIcon className="w-5 h-5" /> Reset All Data
+            </button>
+          </div>
+        </Card>
+
+        {/* Custom category */}
+        <Card>
+          <h3 className="text-sm font-bold text-label mb-3">Add Custom Category</h3>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              placeholder="Category name"
+              className="flex-1"
+            />
+            <input
+              type="color"
+              value={newCatColor}
+              onChange={(e) => setNewCatColor(e.target.value)}
+              className="w-12 h-11 rounded-xl border border-separator/60 cursor-pointer bg-surface-2"
+            />
+            <Button onClick={handleAddCategory} disabled={!newCatName.trim()}>
+              Add
+            </Button>
+          </div>
+        </Card>
+
+        {/* Categories list */}
+        <Card>
+          <h3 className="text-sm font-bold text-label mb-3">Categories ({categories.length})</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {categories.map((cat) => (
+              <div
+                key={cat.id || cat.name}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm"
+                style={{ backgroundColor: `${cat.color || '#64748b'}1a` }}
               >
-                {merchant}
-                <button
-                  onClick={() => {
-                    removeAutoImportMerchant(merchant);
-                    setAutoMerchants(getAutoImportMerchants());
-                  }}
-                  className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-primary-200 transition-colors"
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                  style={{ color: cat.color || '#64748b' }}
                 >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </span>
+                  {cat.name.slice(0, 2).toUpperCase()}
+                </span>
+                <span className="text-label font-medium truncate">{cat.name}</span>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </Card>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">About</h3>
-        <p className="text-sm text-gray-500">Expense Tracker PWA v1.0.0</p>
-        <p className="text-xs text-gray-400 mt-1">
-          A Progressive Web App for tracking expenses. Data is stored locally on your device using IndexedDB. 
-          No data is ever sent to any server — your financial data stays private.
-        </p>
-        <p className="text-xs text-gray-400 mt-2">
-          SMS parsing supports common Indian bank formats (HDFC, ICICI, SBI, Axis, etc.) and UPI transaction messages.
-        </p>
+        {/* Auto-import merchants */}
+        <Card>
+          <h3 className="text-sm font-bold text-label mb-2">Auto-Import Merchants</h3>
+          <p className="text-xs text-tertiary mb-4">
+            SMS from these merchants are auto-imported during scans. Learned each time you manually import an SMS.
+          </p>
+          {autoMerchants.length === 0 ? (
+            <p className="text-sm text-tertiary text-center py-4">
+              No auto-import merchants yet.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {autoMerchants.map((merchant) => (
+                <span
+                  key={merchant}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent-soft text-accent rounded-full text-xs font-semibold"
+                >
+                  {merchant}
+                  <button
+                    onClick={() => {
+                      removeAutoImportMerchant(merchant);
+                      setAutoMerchants(getAutoImportMerchants());
+                    }}
+                    className="tap ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-accent/20"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* About */}
+        <Card>
+          <h3 className="text-sm font-bold text-label mb-2">About</h3>
+          <p className="text-sm text-secondary">Expense Tracker v1.0.0</p>
+          <p className="text-xs text-tertiary mt-1">
+            A local-first expense tracker. All data stays on your device using IndexedDB — nothing is ever sent to a server.
+          </p>
+        </Card>
       </div>
     </div>
   );

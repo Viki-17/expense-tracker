@@ -7,6 +7,7 @@ import { isNativePlatform } from '../utils/platform';
 import SmsReader from '../plugins/sms-reader';
 import { getAutoImportMerchants, addAutoImportMerchant } from '../utils/autoImport';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { TopBar } from './ui/TopBar';
 
 type GroupMode = 'week' | 'month';
 
@@ -321,27 +322,29 @@ export default function SmartSMSReader() {
 
   return (
     <div className="space-y-4" ref={smsRef}>
+      <TopBar title="SMS Import" subtitle="Scan bank & UPI messages" />
+      <div className="px-4 max-w-2xl mx-auto w-full space-y-4">
       {pullDistance > 0 && (
         <div className="flex items-center justify-center py-2">
           <div
-            className="w-6 h-6 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"
+            className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin"
             style={{ opacity: Math.min(pullDistance / 80, 1) }}
           />
-          <span className="ml-2 text-xs text-gray-400">
+          <span className="ml-2 text-xs text-tertiary">
             {pullDistance >= 80 ? 'Release to refresh' : 'Pull to refresh'}
           </span>
         </div>
       )}
       {loading && pullDistance === 0 && (
         <div className="flex items-center justify-center py-2">
-          <div className="w-5 h-5 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
-          <span className="ml-2 text-xs text-primary-500 font-medium">Scanning SMS...</span>
+          <div className="w-5 h-5 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+          <span className="ml-2 text-xs text-accent font-medium">Scanning SMS...</span>
         </div>
       )}
       {isNative && (
-        <div className="bg-gradient-to-br from-primary-500 to-purple-600 rounded-2xl p-5 text-white">
+        <div className="card bg-accent rounded-3xl p-5 text-white shadow-card">
           <h3 className="text-lg font-bold mb-1">Auto-Scan SMS</h3>
-          <p className="text-primary-100 text-sm mb-4">
+          <p className="text-white/80 text-sm mb-4">
             Scan your SMS inbox to find bank & UPI transaction messages.
             Only messages that look like transactions are read.
           </p>
@@ -349,7 +352,7 @@ export default function SmartSMSReader() {
           {!permissionGranted ? (
             <button
               onClick={requestSmsPermission}
-              className="w-full py-3 bg-white text-primary-600 rounded-xl font-semibold text-sm hover:bg-primary-50 transition-colors"
+              className="w-full py-3 bg-surface text-accent rounded-xl font-semibold text-sm hover:bg-accent-soft transition-colors"
             >
               Grant SMS Permission
             </button>
@@ -357,14 +360,14 @@ export default function SmartSMSReader() {
             <button
               onClick={scanDeviceSms}
               disabled={loading}
-              className="w-full py-3 bg-white text-primary-600 rounded-xl font-semibold text-sm hover:bg-primary-50 transition-colors disabled:opacity-60"
+              className="w-full py-3 bg-surface text-accent rounded-xl font-semibold text-sm hover:bg-accent-soft transition-colors disabled:opacity-60"
             >
               {loading ? 'Scanning...' : 'Scan SMS for Transactions'}
             </button>
           )}
 
           {importedCount > 0 && (
-            <p className="text-center text-sm mt-3 text-primary-100">
+            <p className="text-center text-sm mt-3 text-white/80">
               {importedCount} imported this session
             </p>
           )}
@@ -372,7 +375,7 @@ export default function SmartSMSReader() {
       )}
 
       {message && (
-        <p className={`text-sm font-medium ${results.length > 0 ? 'text-income-600' : 'text-amber-600'}`}>
+        <p className={`text-sm font-medium ${results.length > 0 ? 'text-success' : 'text-warning'}`}>
           {message}
         </p>
       )}
@@ -380,7 +383,7 @@ export default function SmartSMSReader() {
       {results.length > 0 && (
         <>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-label">
               Detected Transactions ({results.length})
             </h3>
             <div className="flex items-center gap-2">
@@ -388,23 +391,23 @@ export default function SmartSMSReader() {
                 <button
                   onClick={selectAll}
                   disabled={results.every((_, i) => importedIndices.has(i))}
-                  className="text-[10px] text-primary-500 font-medium hover:text-primary-600 disabled:text-gray-300"
+                  className="text-[10px] text-accent font-medium hover:text-accent disabled:text-tertiary"
                 >
                   Select All to Import
                 </button>
               ) : (
                 <button
                   onClick={cancelSelection}
-                  className="text-[10px] text-gray-500 font-medium hover:text-gray-700"
+                  className="text-[10px] text-secondary font-medium hover:text-label"
                 >
                   Cancel
                 </button>
               )}
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <div className="flex bg-surface-2 rounded-lg p-0.5">
                 <button
                   onClick={() => setGroupMode('week')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    groupMode === 'week' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    groupMode === 'week' ? 'bg-surface text-label shadow-sm' : 'text-secondary'
                   }`}
                 >
                   Week
@@ -412,7 +415,7 @@ export default function SmartSMSReader() {
                 <button
                   onClick={() => setGroupMode('month')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                    groupMode === 'month' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    groupMode === 'month' ? 'bg-surface text-label shadow-sm' : 'text-secondary'
                   }`}
                 >
                   Month
@@ -434,9 +437,9 @@ export default function SmartSMSReader() {
                   <button
                     onClick={() => toggleGroupSelection(groupGlobalIndices)}
                     className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
-                      allGroupSelected ? 'bg-primary-500 border-primary-500' :
-                      someGroupSelected ? 'border-primary-400 bg-primary-50' :
-                      'border-gray-300 hover:border-primary-400'
+                      allGroupSelected ? 'bg-accent border-accent' :
+                      someGroupSelected ? 'border-accent bg-accent-soft' :
+                      'border-separator hover:border-accent'
                     }`}
                   >
                     {(allGroupSelected || someGroupSelected) && (
@@ -449,7 +452,7 @@ export default function SmartSMSReader() {
                       </svg>
                     )}
                   </button>
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <h4 className="text-xs font-semibold text-tertiary uppercase tracking-wider">
                     {group.label}
                   </h4>
                 </div>
@@ -496,17 +499,17 @@ export default function SmartSMSReader() {
                       onPointerDown={handlePointerDown}
                       onPointerUp={handlePointerUp}
                       onPointerLeave={handlePointerUp}
-                      className={`bg-white rounded-xl border p-3 transition-all cursor-pointer active:scale-[0.98] select-none ${
-                        imported ? 'border-income-500/30 bg-green-50/50' :
-                        isSelected ? 'border-primary-400 bg-primary-50' :
-                        'border-gray-100'
+                      className={`bg-surface rounded-xl border p-3 transition-all cursor-pointer active:scale-[0.98] select-none ${
+                        imported ? 'border-success/30 bg-success-soft/50' :
+                        isSelected ? 'border-accent bg-accent-soft' :
+                        'border-separator/40'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           {selectionMode && !imported && (
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              isSelected ? 'bg-primary-500 border-primary-500' : 'border-gray-300'
+                              isSelected ? 'bg-accent border-accent' : 'border-separator'
                             }`}>
                               {isSelected && (
                                 <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -518,19 +521,19 @@ export default function SmartSMSReader() {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                                result.type === 'expense' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                                result.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
                               }`}>
                                 {result.type === 'expense' ? 'EXPENSE' : 'INCOME'}
                               </span>
-                              <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                              <span className="text-[10px] bg-surface-2 text-secondary px-1.5 py-0.5 rounded-full">
                                 {result.category}
                               </span>
-                              <span className="text-[10px] text-gray-400">
+                              <span className="text-[10px] text-tertiary">
                                 {Math.round(result.confidence)}%
                               </span>
                             </div>
-                            <p className="text-sm font-medium text-gray-900 truncate">{result.description}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">
+                            <p className="text-sm font-medium text-label truncate">{result.description}</p>
+                            <p className="text-[10px] text-tertiary mt-0.5">
                               {formatDate(result.date)}
                               {result.merchant && `  ${result.merchant}`}
                             </p>
@@ -546,8 +549,8 @@ export default function SmartSMSReader() {
                               disabled={imported}
                               className={`mt-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
                                 imported
-                                  ? 'bg-green-100 text-green-600 cursor-default'
-                                  : 'bg-primary-500 text-white hover:bg-primary-600'
+                                  ? 'bg-success-soft text-success cursor-default'
+                                  : 'bg-accent text-white hover:brightness-110'
                               }`}
                             >
                               {imported ? (preExisting ? 'Already Imported' : 'Imported') : 'Import'}
@@ -564,19 +567,19 @@ export default function SmartSMSReader() {
           })}
 
           {selectionMode && selectedForImport.size > 0 && (
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 rounded-t-2xl shadow-lg -mx-0 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="sticky bottom-0 bg-surface border-t border-separator/60 rounded-t-2xl shadow-lg -mx-0 px-4 py-3 flex items-center justify-between gap-3">
               <button
                 onClick={cancelSelection}
-                className="text-xs text-gray-500 font-medium hover:text-gray-700 px-2"
+                className="text-xs text-secondary font-medium hover:text-label px-2"
               >
                 Cancel
               </button>
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-sm font-semibold text-label">
                 {selectedForImport.size} selected
               </span>
               <button
                 onClick={bulkImport}
-                className="px-5 py-2 bg-primary-500 text-white rounded-xl text-sm font-semibold hover:bg-primary-600 transition-colors"
+                className="px-5 py-2 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-colors"
               >
                 Import {selectedForImport.size} Transaction{selectedForImport.size !== 1 ? 's' : ''}
               </button>
@@ -591,14 +594,14 @@ export default function SmartSMSReader() {
           onClick={() => setSelectedSMS(null)}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl"
+            className="bg-surface rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-sm font-semibold text-gray-900">SMS Details</h3>
+            <div className="sticky top-0 bg-surface border-b border-separator/40 px-5 py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="text-sm font-semibold text-label">SMS Details</h3>
               <button
                 onClick={() => setSelectedSMS(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-2 text-secondary hover:bg-surface-3 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -608,47 +611,47 @@ export default function SmartSMSReader() {
 
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-medium">Amount</p>
+                <div className="bg-surface-2 rounded-xl p-3">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Amount</p>
                   <p className={`text-lg font-bold ${selectedSMS.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
                     {selectedSMS.type === 'expense' ? '-' : '+'}{formatCurrency(selectedSMS.amount)}
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-medium">Date</p>
-                  <p className="text-sm font-semibold text-gray-900">{formatDate(selectedSMS.date)}</p>
+                <div className="bg-surface-2 rounded-xl p-3">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Date</p>
+                  <p className="text-sm font-semibold text-label">{formatDate(selectedSMS.date)}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-medium">Type</p>
+                <div className="bg-surface-2 rounded-xl p-3">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Type</p>
                   <span className={`inline-block mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full ${
-                    selectedSMS.type === 'expense' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                    selectedSMS.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
                   }`}>
                     {selectedSMS.type.toUpperCase()}
                   </span>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-medium">Category</p>
-                  <p className="text-sm font-semibold text-gray-900">{selectedSMS.category}</p>
+                <div className="bg-surface-2 rounded-xl p-3">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Category</p>
+                  <p className="text-sm font-semibold text-label">{selectedSMS.category}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-medium">Merchant</p>
-                  <p className="text-sm font-semibold text-gray-900">{selectedSMS.merchant || 'N/A'}</p>
+                <div className="bg-surface-2 rounded-xl p-3">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Merchant</p>
+                  <p className="text-sm font-semibold text-label">{selectedSMS.merchant || 'N/A'}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-[10px] text-gray-400 uppercase font-medium">Confidence</p>
-                  <p className="text-sm font-semibold text-gray-900">{Math.round(selectedSMS.confidence)}%</p>
+                <div className="bg-surface-2 rounded-xl p-3">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Confidence</p>
+                  <p className="text-sm font-semibold text-label">{Math.round(selectedSMS.confidence)}%</p>
                 </div>
               </div>
 
               <div>
-                <p className="text-[10px] text-gray-400 uppercase font-medium mb-1.5">Description</p>
-                <p className="text-sm text-gray-700">{selectedSMS.description}</p>
+                <p className="text-[10px] text-tertiary uppercase font-medium mb-1.5">Description</p>
+                <p className="text-sm text-label">{selectedSMS.description}</p>
               </div>
 
               <div>
-                <p className="text-[10px] text-gray-400 uppercase font-medium mb-1.5">Raw SMS</p>
-                <div className="bg-gray-50 rounded-xl p-3 max-h-40 overflow-y-auto">
-                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                <p className="text-[10px] text-tertiary uppercase font-medium mb-1.5">Raw SMS</p>
+                <div className="bg-surface-2 rounded-xl p-3 max-h-40 overflow-y-auto">
+                  <p className="text-sm text-label leading-relaxed whitespace-pre-wrap break-words">
                     {selectedSMS.raw}
                   </p>
                 </div>
@@ -664,34 +667,34 @@ export default function SmartSMSReader() {
           onClick={skipDuplicateImport}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-sm shadow-xl"
+            className="bg-surface rounded-2xl w-full max-w-sm shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-amber-100">
+            <div className="px-5 py-4 border-b border-warning/20">
               <div className="flex items-center gap-2 mb-1">
-                <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-5 h-5 text-warning flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <h3 className="text-sm font-semibold text-gray-900">Possible Duplicate</h3>
+                <h3 className="text-sm font-semibold text-label">Possible Duplicate</h3>
               </div>
-              <p className="text-xs text-gray-500 ml-7">
+              <p className="text-xs text-secondary ml-7">
                 A transaction with the same amount and date already exists.
               </p>
             </div>
 
             <div className="px-5 py-3 space-y-2">
-              <div className="bg-amber-50 rounded-xl p-3">
-                <p className="text-[10px] text-amber-600 uppercase font-medium mb-0.5">Existing Transaction</p>
-                <p className="text-xs font-medium text-gray-900">
+              <div className="bg-warning/15 rounded-xl p-3">
+                <p className="text-[10px] text-warning uppercase font-medium mb-0.5">Existing Transaction</p>
+                <p className="text-xs font-medium text-label">
                   {duplicateCheck.existing.description}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                    duplicateCheck.existing.type === 'expense' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                    duplicateCheck.existing.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
                   }`}>
                     {duplicateCheck.existing.type.toUpperCase()}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-secondary">
                     {formatDate(duplicateCheck.existing.date)}
                   </span>
                   <span className={`text-xs font-bold ${duplicateCheck.existing.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
@@ -700,18 +703,18 @@ export default function SmartSMSReader() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 uppercase font-medium mb-0.5">New Import</p>
-                <p className="text-xs font-medium text-gray-900">
+              <div className="bg-surface-2 rounded-xl p-3">
+                <p className="text-[10px] text-tertiary uppercase font-medium mb-0.5">New Import</p>
+                <p className="text-xs font-medium text-label">
                   {duplicateCheck.result.description}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                    duplicateCheck.result.type === 'expense' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                    duplicateCheck.result.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
                   }`}>
                     {duplicateCheck.result.type.toUpperCase()}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-secondary">
                     {formatDate(duplicateCheck.result.date)}
                   </span>
                   <span className={`text-xs font-bold ${duplicateCheck.result.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
@@ -721,16 +724,16 @@ export default function SmartSMSReader() {
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-gray-100 flex gap-2">
+            <div className="px-5 py-4 border-t border-separator/40 flex gap-2">
               <button
                 onClick={skipDuplicateImport}
-                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+                className="flex-1 py-2.5 bg-surface-2 text-label rounded-xl text-sm font-medium hover:bg-surface-3 transition-colors"
               >
                 Skip
               </button>
               <button
                 onClick={confirmDuplicateImport}
-                className="flex-1 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors"
+                className="flex-1 py-2.5 bg-warning text-white rounded-xl text-sm font-medium hover:brightness-110 transition-colors"
               >
                 Add Anyway
               </button>
@@ -738,6 +741,7 @@ export default function SmartSMSReader() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

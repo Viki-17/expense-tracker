@@ -11,10 +11,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center py-20">
-    <div className="animate-pulse flex flex-col items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-gray-200" />
-      <div className="h-4 w-24 bg-gray-200 rounded" />
-    </div>
+    <div className="w-10 h-10 rounded-full border-[3px] border-surface-3 border-t-accent animate-spin" />
   </div>
 );
 
