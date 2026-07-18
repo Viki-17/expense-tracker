@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
+import { useSwipe } from '../hooks/useSwipe';
 import { formatCurrency, shiftMonth, monthLabel, startOfMonthFor, endOfMonthFor, isSameMonth } from '../utils/formatters';
 import { TopBar } from './ui/TopBar';
 import { Tabs } from './ui/Tabs';
@@ -87,6 +88,19 @@ export default function Dashboard() {
     []
   );
 
+  const TAB_ORDER: TabKey[] = ['transactions', 'categories', 'merchants'];
+  const currentIdx = TAB_ORDER.indexOf(tab);
+
+  const handleSwipeLeft = useCallback(() => {
+    if (currentIdx < TAB_ORDER.length - 1) setTab(TAB_ORDER[currentIdx + 1]);
+  }, [currentIdx]);
+
+  const handleSwipeRight = useCallback(() => {
+    if (currentIdx > 0) setTab(TAB_ORDER[currentIdx - 1]);
+  }, [currentIdx]);
+
+  const swipeHandlers = useSwipe({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight });
+
   return (
     <div>
       <TopBar
@@ -154,6 +168,7 @@ export default function Dashboard() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+            {...swipeHandlers}
           >
             {tab === 'transactions' && (
               <TransactionsTab
