@@ -1,10 +1,12 @@
-import { useState, useCallback, useMemo } from 'react';
-import { parseSMS, parseMultipleSMS } from '../utils/smsParser';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { parseMultipleSMS } from '../utils/smsParser';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import type { SMSResult, Transaction } from '../types';
 import { db } from '../db';
 import { isNativePlatform } from '../utils/platform';
 import SmsReader from '../plugins/sms-reader';
+import { getAutoImportMerchants, addAutoImportMerchant } from '../utils/autoImport';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 type GroupMode = 'week' | 'month';
 
@@ -49,17 +51,47 @@ function formatMonthLabel(monthKey: string): string {
 }
 
 export default function SmartSMSReader() {
-  const [smsText, setSmsText] = useState('');
   const [results, setResults] = useState<SMSResult[]>([]);
   const [importedIndices, setImportedIndices] = useState<Set<number>>(new Set());
+  const [preExistingIndices, setPreExistingIndices] = useState<Set<number>>(new Set());
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [groupMode, setGroupMode] = useState<GroupMode>('week');
   const [selectedSMS, setSelectedSMS] = useState<SMSResult | null>(null);
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheck | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedForImport, setSelectedForImport] = useState<Set<number>>(new Set());
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const smsRef = useRef<HTMLDivElement>(null);
 
   const isNative = isNativePlatform();
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isNative) return;
+    SmsReader.checkPermission().then((res) => {
+      setPermissionGranted(res.granted);
+    });
+  }, [isNative]);
+
+  useEffect(() => {
+    if (!isNative || !permissionGranted) return;
+    scanDeviceSms();
+
+    const interval = setInterval(() => {
+      scanDeviceSms();
+    }, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNative, permissionGranted]);
 
   const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
     await db.transactions.add({ ...t, createdAt: new Date().toISOString() });
@@ -76,6 +108,9 @@ export default function SmartSMSReader() {
       smsText: result.raw,
     });
     setImportedIndices((prev) => new Set([...prev, index]));
+    if (result.merchant) {
+      addAutoImportMerchant(result.merchant);
+    }
   }, [addTransaction]);
 
   const handleImport = useCallback(async (result: SMSResult, index: number) => {
@@ -102,25 +137,6 @@ export default function SmartSMSReader() {
     setDuplicateCheck(null);
   }, []);
 
-  const handleParse = useCallback(() => {
-    if (!smsText.trim()) return;
-    const lines = smsText.split(/\n{2,}/).filter((l) => l.trim());
-    const parsed = lines.length > 1 ? parseMultipleSMS(lines) : [parseSMS(smsText)].filter(Boolean) as SMSResult[];
-    setResults(parsed);
-    setMessage(
-      parsed.length > 0
-        ? `Found ${parsed.length} transaction(s)`
-        : 'No transactions detected. Try pasting a bank/UPI SMS.'
-    );
-  }, [smsText]);
-
-  const handleClear = useCallback(() => {
-    setSmsText('');
-    setResults([]);
-    setImportedIndices(new Set());
-    setMessage('');
-  }, []);
-
   const requestSmsPermission = useCallback(async () => {
     if (!isNative) return;
     const res = await SmsReader.requestPermission();
@@ -128,23 +144,139 @@ export default function SmartSMSReader() {
     if (res.granted) {
       setMessage('Permission granted! Tap "Scan SMS" to find transactions.');
     } else {
-      setMessage('SMS permission denied. You can still paste SMS manually below.');
+      setMessage('SMS permission denied. Please grant SMS permission in your device settings to scan transactions.');
     }
   }, [isNative]);
+
+  const enterSelectionMode = useCallback((index: number) => {
+    if (importedIndices.has(index)) return;
+    setSelectionMode(true);
+    setSelectedForImport((prev) => new Set([...prev, index]));
+  }, [importedIndices]);
+
+  const toggleSelect = useCallback((index: number) => {
+    if (importedIndices.has(index)) return;
+    setSelectedForImport((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+        if (next.size === 0) setSelectionMode(false);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  }, [importedIndices]);
+
+  const toggleGroupSelection = useCallback((groupIndices: number[]) => {
+    const selectable = groupIndices.filter((i) => !importedIndices.has(i));
+    if (selectable.length === 0) return;
+    const allSelected = selectable.every((i) => selectedForImport.has(i));
+    setSelectedForImport((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        selectable.forEach((i) => next.delete(i));
+        if (next.size === 0) setSelectionMode(false);
+      } else {
+        selectable.forEach((i) => next.add(i));
+      }
+      return next;
+    });
+    if (!allSelected) setSelectionMode(true);
+  }, [importedIndices, selectedForImport]);
+
+  const selectAll = useCallback(() => {
+    const selectable = results
+      .map((_, i) => i)
+      .filter((i) => !importedIndices.has(i));
+    if (selectable.length === 0) return;
+    setSelectionMode(true);
+    setSelectedForImport(new Set(selectable));
+  }, [results, importedIndices]);
+
+  const cancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedForImport(new Set());
+  }, []);
+
+  const bulkImport = useCallback(async () => {
+    for (const index of selectedForImport) {
+      if (importedIndices.has(index)) continue;
+      const result = results[index];
+      const sameDay = await db.transactions
+        .where('[type+date]')
+        .equals([result.type, result.date])
+        .toArray();
+      if (sameDay.find((t) => t.amount === result.amount)) continue;
+      doImport(result, index);
+    }
+    setSelectionMode(false);
+    setSelectedForImport(new Set());
+  }, [selectedForImport, importedIndices, results, doImport]);
 
   const scanDeviceSms = useCallback(async () => {
     if (!isNative || !permissionGranted) return;
     setLoading(true);
     setMessage('Scanning SMS inbox for transactions...');
     try {
-      const res = await SmsReader.getMessages({ maxCount: 500, daysBack: 30 });
-      const bodies = res.messages.map((m) => m.body);
+      const [smsRes, existingRes] = await Promise.all([
+        SmsReader.getMessages({ maxCount: 1000, daysBack: 730 }),
+        db.transactions.where('source').equals('sms').toArray(),
+      ]);
+      const existingTexts = new Set(existingRes.map((t) => t.smsText).filter(Boolean) as string[]);
+      const autoMerchants = getAutoImportMerchants().map((m) => m.toLowerCase());
+
+      const bodies = smsRes.messages.map((m) => m.body);
       const parsed = parseMultipleSMS(bodies);
+
+      const preExisting = new Set<number>();
+      const autoImported = new Set<number>();
+
+      for (let idx = 0; idx < parsed.length; idx++) {
+        const result = parsed[idx];
+        if (existingTexts.has(result.raw)) {
+          preExisting.add(idx);
+          continue;
+        }
+
+        const merchantMatch = result.merchant && autoMerchants.includes(result.merchant.toLowerCase());
+        if (merchantMatch) {
+          const sameDay = await db.transactions
+            .where('[type+date]')
+            .equals([result.type, result.date])
+            .toArray();
+          if (!sameDay.find((t) => t.amount === result.amount)) {
+            await db.transactions.add({
+              amount: result.amount,
+              type: result.type,
+              category: result.category,
+              description: result.description,
+              date: result.date,
+              source: 'sms',
+              smsText: result.raw,
+              createdAt: new Date().toISOString(),
+            });
+          }
+          autoImported.add(idx);
+        }
+      }
+
+      const allImported = new Set([...preExisting, ...autoImported]);
+      setPreExistingIndices(preExisting);
+      setImportedIndices(allImported);
       setResults(parsed);
+      setSelectedForImport(new Set());
+      setSelectionMode(false);
+
+      const remaining = parsed.length - allImported.size;
+      const parts: string[] = [];
+      if (autoImported.size > 0) parts.push(`${autoImported.size} auto-imported`);
+      if (preExisting.size > 0) parts.push(`${preExisting.size} already imported`);
+      if (remaining > 0) parts.push(`${remaining} new found`);
       setMessage(
         parsed.length > 0
-          ? `Found ${parsed.length} transaction(s) from ${res.messages.length} financial SMS in your inbox.`
-          : `Scanned ${res.messages.length} financial SMS but detected no new transactions. You can paste SMS manually below.`
+          ? `Scanned ${smsRes.messages.length} financial SMS. ${parts.join(', ')}.`
+          : `Scanned ${smsRes.messages.length} financial SMS but detected no transactions.`
       );
     } catch (e: any) {
       setMessage(`Error: ${e.message || 'Failed to scan SMS'}`);
@@ -152,6 +284,16 @@ export default function SmartSMSReader() {
       setLoading(false);
     }
   }, [isNative, permissionGranted]);
+
+  const { pullDistance, refreshing, setRefreshing } = usePullToRefresh(smsRef, {
+    onRefresh: scanDeviceSms,
+  });
+
+  useEffect(() => {
+    if (refreshing && !loading) {
+      setRefreshing(false);
+    }
+  }, [refreshing, loading, setRefreshing]);
 
   const groups = useMemo<ResultGroup[]>(() => {
     if (!results.length) return [];
@@ -178,7 +320,24 @@ export default function SmartSMSReader() {
   const importedCount = importedIndices.size;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={smsRef}>
+      {pullDistance > 0 && (
+        <div className="flex items-center justify-center py-2">
+          <div
+            className="w-6 h-6 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"
+            style={{ opacity: Math.min(pullDistance / 80, 1) }}
+          />
+          <span className="ml-2 text-xs text-gray-400">
+            {pullDistance >= 80 ? 'Release to refresh' : 'Pull to refresh'}
+          </span>
+        </div>
+      )}
+      {loading && pullDistance === 0 && (
+        <div className="flex items-center justify-center py-2">
+          <div className="w-5 h-5 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
+          <span className="ml-2 text-xs text-primary-500 font-medium">Scanning SMS...</span>
+        </div>
+      )}
       {isNative && (
         <div className="bg-gradient-to-br from-primary-500 to-purple-600 rounded-2xl p-5 text-white">
           <h3 className="text-lg font-bold mb-1">Auto-Scan SMS</h3>
@@ -212,51 +371,6 @@ export default function SmartSMSReader() {
         </div>
       )}
 
-      <div className={isNative ? 'bg-white rounded-2xl border border-gray-100 p-5' : ''}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900">
-            {isNative ? 'Or Paste SMS Manually' : 'Paste SMS'}
-          </h3>
-          {!isNative && (
-            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-              PWA Mode
-            </span>
-          )}
-        </div>
-
-        {!isNative && (
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-700 mb-3">
-            <p className="font-medium mb-0.5">On Android?</p>
-            <p className="text-blue-600 text-xs">
-              Install the native app version to auto-scan your SMS inbox. In browser/PWA mode,
-              paste bank/UPI SMS messages manually.
-            </p>
-          </div>
-        )}
-
-        <textarea
-          value={smsText}
-          onChange={(e) => setSmsText(e.target.value)}
-          placeholder="Paste your bank/UPI transaction SMS here...&#10;&#10;Examples:&#10; Rs.500 spent on Swiggy at 12:34 on 15-Jan&#10; 1,200 debited from a/c **1234 at Amazon&#10; UPI payment of 350 to PhonePe&#10;&#10;Paste multiple messages separated by blank lines."
-          rows={5}
-          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all resize-none"
-        />
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={handleParse}
-            disabled={!smsText.trim()}
-            className="flex-1 py-2.5 bg-primary-500 text-white rounded-xl font-medium text-sm hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Parse SMS
-          </button>
-          {smsText && (
-            <button onClick={handleClear} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm hover:bg-gray-200 transition-colors">
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
-
       {message && (
         <p className={`text-sm font-medium ${results.length > 0 ? 'text-income-600' : 'text-amber-600'}`}>
           {message}
@@ -269,32 +383,76 @@ export default function SmartSMSReader() {
             <h3 className="text-sm font-semibold text-gray-900">
               Detected Transactions ({results.length})
             </h3>
-            <div className="flex bg-gray-100 rounded-lg p-0.5">
-              <button
-                onClick={() => setGroupMode('week')}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  groupMode === 'week' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                }`}
-              >
-                Week
-              </button>
-              <button
-                onClick={() => setGroupMode('month')}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                  groupMode === 'month' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-                }`}
-              >
-                Month
-              </button>
+            <div className="flex items-center gap-2">
+              {!selectionMode ? (
+                <button
+                  onClick={selectAll}
+                  disabled={results.every((_, i) => importedIndices.has(i))}
+                  className="text-[10px] text-primary-500 font-medium hover:text-primary-600 disabled:text-gray-300"
+                >
+                  Select All to Import
+                </button>
+              ) : (
+                <button
+                  onClick={cancelSelection}
+                  className="text-[10px] text-gray-500 font-medium hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              )}
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                <button
+                  onClick={() => setGroupMode('week')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    groupMode === 'week' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setGroupMode('month')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    groupMode === 'month' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  }`}
+                >
+                  Month
+                </button>
+              </div>
             </div>
           </div>
 
-          {groups.map((group) => (
+          {groups.map((group) => {
+            const groupGlobalIndices = group.results.map((r) => results.indexOf(r));
+            const selectableInGroup = groupGlobalIndices.filter((i) => !importedIndices.has(i));
+            const allGroupSelected = selectableInGroup.length > 0 && selectableInGroup.every((i) => selectedForImport.has(i));
+            const someGroupSelected = selectableInGroup.some((i) => selectedForImport.has(i));
+
+            return (
             <div key={group.dateRange}>
               <div className="flex items-center justify-between mb-2 mt-4 px-1">
-                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  {group.label}
-                </h4>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleGroupSelection(groupGlobalIndices)}
+                    className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
+                      allGroupSelected ? 'bg-primary-500 border-primary-500' :
+                      someGroupSelected ? 'border-primary-400 bg-primary-50' :
+                      'border-gray-300 hover:border-primary-400'
+                    }`}
+                  >
+                    {(allGroupSelected || someGroupSelected) && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        {allGroupSelected ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        ) : (
+                          <path strokeLinecap="round" d="M5 12h14" />
+                        )}
+                      </svg>
+                    )}
+                  </button>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    {group.label}
+                  </h4>
+                </div>
                 <div className="flex gap-3 text-[11px] font-medium">
                   {group.totalExpense > 0 && (
                     <span className="text-expense-500">-{formatCurrency(group.totalExpense)}</span>
@@ -309,50 +467,92 @@ export default function SmartSMSReader() {
                 {group.results.map((result, i) => {
                   const globalIndex = results.indexOf(result);
                   const imported = importedIndices.has(globalIndex);
+                  const preExisting = preExistingIndices.has(globalIndex);
+                  const isSelected = selectedForImport.has(globalIndex);
+
+                  const handlePointerDown = () => {
+                    if (selectionMode || imported) return;
+                    longPressTimer.current = setTimeout(() => {
+                      enterSelectionMode(globalIndex);
+                    }, 500);
+                  };
+
+                  const handlePointerUp = () => {
+                    clearLongPress();
+                  };
+
+                  const handleClick = () => {
+                    if (selectionMode) {
+                      toggleSelect(globalIndex);
+                    } else {
+                      setSelectedSMS(result);
+                    }
+                  };
+
                   return (
                     <div
                       key={`${result.date}-${result.amount}-${i}`}
-                      onClick={() => setSelectedSMS(result)}
-                      className={`bg-white rounded-xl border p-3 transition-all cursor-pointer active:scale-[0.98] ${
-                        imported ? 'border-income-500/30 bg-green-50/50' : 'border-gray-100'
+                      onClick={handleClick}
+                      onPointerDown={handlePointerDown}
+                      onPointerUp={handlePointerUp}
+                      onPointerLeave={handlePointerUp}
+                      className={`bg-white rounded-xl border p-3 transition-all cursor-pointer active:scale-[0.98] select-none ${
+                        imported ? 'border-income-500/30 bg-green-50/50' :
+                        isSelected ? 'border-primary-400 bg-primary-50' :
+                        'border-gray-100'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                              result.type === 'expense' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {selectionMode && !imported && (
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              isSelected ? 'bg-primary-500 border-primary-500' : 'border-gray-300'
                             }`}>
-                              {result.type === 'expense' ? 'EXPENSE' : 'INCOME'}
-                            </span>
-                            <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
-                              {result.category}
-                            </span>
-                            <span className="text-[10px] text-gray-400">
-                              {Math.round(result.confidence)}%
-                            </span>
+                              {isSelected && (
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                                result.type === 'expense' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                              }`}>
+                                {result.type === 'expense' ? 'EXPENSE' : 'INCOME'}
+                              </span>
+                              <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                                {result.category}
+                              </span>
+                              <span className="text-[10px] text-gray-400">
+                                {Math.round(result.confidence)}%
+                              </span>
+                            </div>
+                            <p className="text-sm font-medium text-gray-900 truncate">{result.description}</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">
+                              {formatDate(result.date)}
+                              {result.merchant && `  ${result.merchant}`}
+                            </p>
                           </div>
-                          <p className="text-sm font-medium text-gray-900 truncate">{result.description}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">
-                            {formatDate(result.date)}
-                            {result.merchant && `  ${result.merchant}`}
-                          </p>
                         </div>
                         <div className="text-right shrink-0">
                           <p className={`text-base font-bold ${result.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
                             {result.type === 'expense' ? '-' : '+'}{formatCurrency(result.amount)}
                           </p>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleImport(result, globalIndex); }}
-                            disabled={imported}
-                            className={`mt-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
-                              imported
-                                ? 'bg-green-100 text-green-600 cursor-default'
-                                : 'bg-primary-500 text-white hover:bg-primary-600'
-                            }`}
-                          >
-                            {imported ? 'Imported' : 'Import'}
-                          </button>
+                          {!selectionMode && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleImport(result, globalIndex); }}
+                              disabled={imported}
+                              className={`mt-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                                imported
+                                  ? 'bg-green-100 text-green-600 cursor-default'
+                                  : 'bg-primary-500 text-white hover:bg-primary-600'
+                              }`}
+                            >
+                              {imported ? (preExisting ? 'Already Imported' : 'Imported') : 'Import'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -360,13 +560,34 @@ export default function SmartSMSReader() {
                 })}
               </div>
             </div>
-          ))}
+          );
+          })}
+
+          {selectionMode && selectedForImport.size > 0 && (
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 rounded-t-2xl shadow-lg -mx-0 px-4 py-3 flex items-center justify-between gap-3">
+              <button
+                onClick={cancelSelection}
+                className="text-xs text-gray-500 font-medium hover:text-gray-700 px-2"
+              >
+                Cancel
+              </button>
+              <span className="text-sm font-semibold text-gray-900">
+                {selectedForImport.size} selected
+              </span>
+              <button
+                onClick={bulkImport}
+                className="px-5 py-2 bg-primary-500 text-white rounded-xl text-sm font-semibold hover:bg-primary-600 transition-colors"
+              >
+                Import {selectedForImport.size} Transaction{selectedForImport.size !== 1 ? 's' : ''}
+              </button>
+            </div>
+          )}
         </>
       )}
 
       {selectedSMS && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
           onClick={() => setSelectedSMS(null)}
         >
           <div
@@ -426,8 +647,8 @@ export default function SmartSMSReader() {
 
               <div>
                 <p className="text-[10px] text-gray-400 uppercase font-medium mb-1.5">Raw SMS</p>
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap break-words">
+                <div className="bg-gray-50 rounded-xl p-3 max-h-40 overflow-y-auto">
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
                     {selectedSMS.raw}
                   </p>
                 </div>
@@ -514,30 +735,6 @@ export default function SmartSMSReader() {
                 Add Anyway
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {!results.length && !loading && (
-        <div className="mt-6">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Sample SMS formats to try:</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {[
-              'HDFC Bank: Rs.500.00 debited from a/c **1234 at AMAZON on 15-Jan',
-              'ICICI Bank: Rs.1,200 spent on Swiggy at 12:34 PM. Avl Bal: Rs.25,000',
-              'SBI: Rs.10,000 credited to a/c **5678. UPI Ref: 1234567890',
-              'Axis Bank: INR 750.00 paid via UPI to PhonePe. Ref No: 9876543210',
-              'Salary credited: Rs.50,000.00 on 01-Jan-2024',
-              'Your card **9012 was used for Rs.2,499 at Flipkart on 20-Jan',
-            ].map((example, exampleI) => (
-              <button
-                key={exampleI}
-                onClick={() => setSmsText(example)}
-                className="text-left text-xs p-2.5 bg-gray-50 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors truncate"
-              >
-                {example}
-              </button>
-            ))}
           </div>
         </div>
       )}

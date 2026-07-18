@@ -1,15 +1,35 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTransactionStats } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency, startOfMonth, endOfMonth, today, startOfWeek } from '../utils/formatters';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useSwipe } from '../hooks/useSwipe';
 import type { DateRange } from '../types';
+
+const DATE_RANGES: DateRange[] = ['week', 'month', 'year', 'all'];
 
 export default function Dashboard() {
   const [range, setRange] = useState<DateRange>('month');
   const { categories } = useCategories();
   const navigate = useNavigate();
+  const swipeRef = useRef<HTMLDivElement>(null);
+
+  const handleSwipeLeft = useCallback(() => {
+    setRange((prev) => {
+      const idx = DATE_RANGES.indexOf(prev);
+      return DATE_RANGES[Math.min(idx + 1, DATE_RANGES.length - 1)];
+    });
+  }, []);
+
+  const handleSwipeRight = useCallback(() => {
+    setRange((prev) => {
+      const idx = DATE_RANGES.indexOf(prev);
+      return DATE_RANGES[Math.max(idx - 1, 0)];
+    });
+  }, []);
+
+  useSwipe(swipeRef, { onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight });
 
   const handleCardTap = useCallback((type: 'expense' | 'income') => {
     navigate(`/transactions?filter=${type}`);
@@ -72,9 +92,9 @@ export default function Dashboard() {
   const { totalExpense, totalIncome, breakdown, net } = stats;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" ref={swipeRef}>
       <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
-        {(['week', 'month', 'year', 'all'] as DateRange[]).map((r) => (
+        {DATE_RANGES.map((r) => (
           <button
             key={r}
             onClick={() => setRange(r)}

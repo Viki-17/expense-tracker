@@ -3,8 +3,12 @@ import { useSearchParams } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency } from '../utils/formatters';
+import { useSwipe } from '../hooks/useSwipe';
 import { TrashIcon } from './Icons';
 import type { SortField, SortDirection } from '../types';
+
+const FILTERS = ['all', 'expense', 'income'] as const;
+type Filter = (typeof FILTERS)[number];
 
 const ROW_HEIGHT = 72;
 const LIST_OVERSCAN = 5;
@@ -14,13 +18,42 @@ export default function TransactionList() {
   const { getCategory } = useCategories();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterParam = searchParams.get('filter');
-  const [filter, setFilter] = useState<'all' | 'expense' | 'income'>(
+  const [filter, setFilter] = useState<Filter>(
     filterParam === 'expense' || filterParam === 'income' ? filterParam : 'all'
   );
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleSwipeLeft = useCallback(() => {
+    setFilter((prev) => {
+      const idx = FILTERS.indexOf(prev);
+      const next = FILTERS[Math.min(idx + 1, FILTERS.length - 1)];
+      setSearchParams(next === 'all' ? {} : { filter: next });
+      return next;
+    });
+  }, [setSearchParams]);
+
+  const handleSwipeRight = useCallback(() => {
+    setFilter((prev) => {
+      const idx = FILTERS.indexOf(prev);
+      const next = FILTERS[Math.max(idx - 1, 0)];
+      setSearchParams(next === 'all' ? {} : { filter: next });
+      return next;
+    });
+  }, [setSearchParams]);
+
+  useSwipe(containerRef, { onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight });
+
+  useEffect(() => {
+    if (filterParam === 'expense' || filterParam === 'income') {
+      setFilter(filterParam);
+    } else if (!filterParam) {
+      setFilter('all');
+    }
+  }, [filterParam]);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
   const [listHeight, setListHeight] = useState(400);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateHeight = () => {
@@ -79,7 +112,7 @@ export default function TransactionList() {
     <div className="flex flex-col h-full" ref={containerRef}>
       <div className="flex items-center justify-between mb-4 gap-2 shrink-0">
         <div className="flex bg-gray-100 rounded-lg p-1">
-          {(['all', 'expense', 'income'] as const).map((f) => (
+          {FILTERS.map((f) => (
             <button
               key={f}
               onClick={() => {

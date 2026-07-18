@@ -89,8 +89,8 @@ public class SmsReaderPlugin extends Plugin {
             }
         }
 
-        int maxCount = call.getInt("maxCount", 200);
-        int daysBack = call.getInt("daysBack", 30);
+        int maxCount = call.getInt("maxCount", 1000);
+        int daysBack = call.getInt("daysBack", 730);
 
         long sinceMillis = System.currentTimeMillis() - (daysBack * 24L * 60L * 60L * 1000L);
 

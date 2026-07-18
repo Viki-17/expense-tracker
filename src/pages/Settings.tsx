@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { db, DEFAULT_CATEGORIES } from '../db';
 import { useCategories } from '../hooks/useCategories';
+import { getAutoImportMerchants, removeAutoImportMerchant } from '../utils/autoImport';
 
 export default function Settings() {
   const { categories, addCategory } = useCategories();
@@ -8,6 +9,7 @@ export default function Settings() {
   const [newCatIcon, setNewCatIcon] = useState('📌');
   const [newCatColor, setNewCatColor] = useState('#6366f1');
   const [exportStatus, setExportStatus] = useState('');
+  const [autoMerchants, setAutoMerchants] = useState(getAutoImportMerchants);
 
   const handleExport = useCallback(async () => {
     const transactions = await db.transactions.toArray();
@@ -138,6 +140,40 @@ export default function Settings() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">Auto-Import Merchants</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          SMS from these merchants are auto-imported during periodic scans. Merchants are learned each time you manually import an SMS.
+        </p>
+        {autoMerchants.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">
+            No auto-import merchants yet. Import an SMS manually to add its merchant here.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {autoMerchants.map((merchant) => (
+              <span
+                key={merchant}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium"
+              >
+                {merchant}
+                <button
+                  onClick={() => {
+                    removeAutoImportMerchant(merchant);
+                    setAutoMerchants(getAutoImportMerchants());
+                  }}
+                  className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full hover:bg-primary-200 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 p-5">

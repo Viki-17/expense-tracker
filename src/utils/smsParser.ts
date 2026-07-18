@@ -161,6 +161,13 @@ const MERCHANT_PATTERNS: [RegExp, string][] = [
 export function parseSMS(message: string): SMSResult | null {
   const cleaned = message.replace(/\s+/g, ' ').trim();
 
+  const TXN_KEYWORDS = /\b(?:debit(?:ed)?|credit(?:ed)?|spent|paid|withdr(?:awn|aw)|purchased?|deposited?|neft|imps|rtgs|upi|balance|avl\s*bal|available|sent|received|transferred|ref\s*no|txn|transaction|emi|recharge|bill\s*pay|payment)\b/i;
+  const hasCurrency = /(?:Rs\.?|INR)\s*[\d,]+/i;
+
+  if (!TXN_KEYWORDS.test(cleaned) && !hasCurrency.test(cleaned)) {
+    return null;
+  }
+
   let amount: number | null = null;
   let type: 'expense' | 'income' = 'expense';
   let category = 'Other';
@@ -172,7 +179,7 @@ export function parseSMS(message: string): SMSResult | null {
     /(?:Rs\.?|INR)\s*([\d,]+\.?\d*)/i,
     /([\d,]+\.?\d*)\s*(?:Rs\.?|INR)/i,
     /(?:amount\s*(?:of\s*)?|amt\.?\s*)(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
-    /([\d,]+\.?\d{2})\b/,
+    /([\d,]+\.\d{2})\b/,
   ];
 
   for (const pattern of amountPatterns) {
@@ -183,14 +190,6 @@ export function parseSMS(message: string): SMSResult | null {
         amount = amt;
         break;
       }
-    }
-  }
-
-  if (!amount) {
-    // Try matching any number that looks like an amount
-    const genericMatch = cleaned.match(/([\d,]+\.?\d{2})/);
-    if (genericMatch) {
-      amount = parseFloat(genericMatch[1].replace(/,/g, ''));
     }
   }
 

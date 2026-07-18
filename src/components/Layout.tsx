@@ -2,9 +2,11 @@ import { type ReactNode, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
+import { useSafeArea } from '../hooks/useSafeArea';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const safeArea = useSafeArea();
 
   const title = useMemo(() => {
     switch (location.pathname) {
@@ -18,6 +20,10 @@ export default function Layout({ children }: { children: ReactNode }) {
     }
   }, [location.pathname]);
 
+  const headerStyle = safeArea.top > 0 || safeArea.left > 0 || safeArea.right > 0
+    ? { paddingTop: safeArea.top, paddingLeft: safeArea.left, paddingRight: safeArea.right }
+    : undefined;
+
   return (
     <div className="flex h-dvh bg-gray-50">
       <div className="hidden lg:block">
@@ -29,7 +35,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         </header>
 
-        <header className="lg:hidden flex items-center h-14 px-4 bg-white border-b border-gray-200 shrink-0 safe-top">
+        <header className="lg:hidden flex items-center h-14 px-4 bg-white border-b border-gray-200 shrink-0 safe-top" style={headerStyle}>
           <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
         </header>
 

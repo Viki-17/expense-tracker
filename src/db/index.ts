@@ -7,8 +7,8 @@ export class ExpenseDB extends Dexie {
 
   constructor() {
     super('ExpenseTrackerDB');
-    this.version(2).stores({
-      transactions: '++id, type, category, date, amount, [type+date]',
+    this.version(3).stores({
+      transactions: '++id, type, category, date, amount, source, [type+date]',
       categories: '++id, name',
     });
     this.on('populate', () => this.populate());

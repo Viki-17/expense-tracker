@@ -15,7 +15,10 @@
     "cap:sync": "npm run build:cap && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap sync",
     "cap:sync:web": "npm run build:web && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap sync",
     "cap:open:android": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap open android",
-    "cap:run:android": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap run android"
+    "cap:run:android": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap run android",
+    "build:android": "npm run cap:sync && cd android && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && ./gradlew clean assembleDebug",
+    "seed-sms": "bash scripts/seed-sms.sh",
+    "android:preview": "bash scripts/preview-android.sh"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
