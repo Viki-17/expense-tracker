@@ -129,6 +129,8 @@ export default function GroupDetail({ type }: GroupDetailProps) {
     [chartData]
   );
 
+  const chartLoading = monthlyTotals === undefined;
+
   return (
     <div>
       <TopBar
@@ -154,7 +156,13 @@ export default function GroupDetail({ type }: GroupDetailProps) {
         className="px-3 w-full lg:max-w-2xl lg:mx-auto"
         {...swipeHandlers}
       >
-        {chartHasData && (
+        {chartLoading && (
+          <div className="py-6 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full border-2 border-surface-3 border-t-accent animate-spin" />
+          </div>
+        )}
+
+        {!chartLoading && chartHasData && (
           <div className="pt-2 pb-1">
             <GroupBarChart
               data={chartData}
@@ -164,7 +172,7 @@ export default function GroupDetail({ type }: GroupDetailProps) {
           </div>
         )}
 
-        {!chartHasData && chartData.length > 0 && (
+        {!chartLoading && !chartHasData && chartData.length > 0 && (
           <div className="py-8">
             <EmptyState
               icon={<WalletIcon className="w-7 h-7" />}

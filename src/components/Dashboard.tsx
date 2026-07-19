@@ -18,7 +18,8 @@ import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
 import { MonthBarChart } from './ui/MonthBarChart';
 import { CategoryDonutChart } from './ui/CategoryDonutChart';
-import { ChevronDownIcon, CogIcon, PlusCircleIcon, WalletIcon } from './Icons';
+import { TransactionDetailModal } from './TransactionDetailModal';
+import { ChevronDownIcon, CogIcon, PlusCircleIcon, WalletIcon, CategoryIcon } from './Icons';
 
 type TabKey = 'transactions' | 'categories' | 'merchants';
 const MAX_ROWS = 200;
@@ -26,7 +27,10 @@ const MAX_ROWS = 200;
 export default function Dashboard() {
   const navigate = useNavigate();
   const { categories, getCategory } = useCategories();
-  const [tab, setTab] = useState<TabKey>('transactions');
+  const [tab, setTab] = useState<TabKey>(() => {
+    const saved = sessionStorage.getItem('dashboardTab') as TabKey | null;
+    return saved || 'transactions';
+  });
   const [chartOpen, setChartOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
@@ -39,6 +43,10 @@ export default function Dashboard() {
   useEffect(() => {
     db.getMonthlyTotals(90).then(setMonthlyTotals);
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('dashboardTab', tab);
+  }, [tab]);
 
   const cursor = useMemo(() => {
     const [y, m] = selectedMonth.split('-').map(Number);
@@ -54,7 +62,7 @@ export default function Dashboard() {
     const lastDay = new Date(y, m, 0).getDate();
     return `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
   }, [selectedMonth]);
-  const { transactions, deleteTransaction } = useTransactions(start, end);
+  const { transactions, deleteTransaction, updateTransaction } = useTransactions(start, end);
 
   const handleSelectMonth = useCallback((month: string) => {
     setSelectedMonth(month);
@@ -110,6 +118,11 @@ export default function Dashboard() {
     (id: number) => deleteTransaction(id),
     [deleteTransaction]
   );
+
+  const handleUpdateCategory = useCallback(
+    (id: number, category: string) => updateTransaction(id, { category }),
+    [updateTransaction]
+  );
   const rows =
     transactions.length > MAX_ROWS
       ? transactions.slice(0, MAX_ROWS)
@@ -136,7 +149,7 @@ export default function Dashboard() {
     if (currentIdx > 0) setTab(TAB_ORDER[currentIdx - 1]);
   }, [currentIdx]);
 
-  const swipeHandlers = useSwipe({
+  const swipeRef = useSwipe({
     onSwipeLeft: handleSwipeLeft,
     onSwipeRight: handleSwipeRight,
   });
@@ -169,7 +182,7 @@ export default function Dashboard() {
         }
       />
 
-      <div className="px-3 w-full lg:max-w-2xl lg:mx-auto">
+      <div ref={swipeRef} className="px-3 w-full lg:max-w-2xl lg:mx-auto" style={{ touchAction: 'pan-y' }}>
         <AnimatePresence initial={false}>
           {chartOpen && (
             <motion.div
@@ -203,7 +216,6 @@ export default function Dashboard() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -8 }}
             transition={{ duration: 0.1, ease: [0.25, 0.8, 0.25, 1] }}
-            {...swipeHandlers}
           >
             {tab === 'transactions' && (
               <TransactionsTab
@@ -213,7 +225,9 @@ export default function Dashboard() {
                 income={stats.income}
                 budget={monthlyBudget}
                 getCategory={getCategory}
+                allCategories={categories}
                 onDelete={handleDelete}
+                onUpdateCategory={handleUpdateCategory}
                 onAdd={() => navigate('/add')}
                 onBudget={() => navigate('/budgets')}
               />
@@ -251,7 +265,9 @@ interface TransactionsTabProps {
   income: number;
   budget: number;
   getCategory: (name: string) => import('../types').Category | undefined;
+  allCategories: import('../types').Category[];
   onDelete: (id: number) => void;
+  onUpdateCategory: (id: number, category: string) => void;
   onAdd: () => void;
   onBudget: () => void;
 }
@@ -263,10 +279,14 @@ function TransactionsTab({
   income,
   budget,
   getCategory,
+  allCategories,
   onDelete,
+  onUpdateCategory,
   onAdd,
   onBudget,
 }: TransactionsTabProps) {
+  const [selectedTransaction, setSelectedTransaction] = useState<import('../types').Transaction | null>(null);
+
   const list = (
     <div className="space-y-2">
       {rows.map((t) => (
@@ -279,6 +299,9 @@ function TransactionsTab({
             t={t}
             category={getCategory(t.category)}
             onDelete={onDelete}
+            onClick={() => setSelectedTransaction(t)}
+            onCategoryChange={(cat) => onUpdateCategory(t.id!, cat)}
+            allCategories={allCategories}
           />
         </Card>
       ))}
@@ -371,6 +394,12 @@ function TransactionsTab({
         </div>
       </Card>
       {list}
+      {selectedTransaction && (
+        <TransactionDetailModal
+          transaction={selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+        />
+      )}
     </div>
   );
 }
@@ -393,6 +422,8 @@ function CategoriesTab({
   onCategoryBudget,
   empty,
 }: CategoriesTabProps) {
+  const navigate = useNavigate();
+
   const donutData = useMemo(
     () =>
       sortedBreakdown.map(([name, amount]) => {
@@ -404,6 +435,11 @@ function CategoriesTab({
         };
       }),
     [sortedBreakdown, getCategory]
+  );
+
+  const handleCategoryClick = useCallback(
+    (name: string) => navigate(`/category/${encodeURIComponent(name)}`),
+    [navigate]
   );
 
   if (empty || sortedBreakdown.length === 0) {
@@ -429,11 +465,14 @@ function CategoriesTab({
           const isKnown = !!cat;
           const count = categoryCounts.get(name) || 0;
           return (
-            <Card key={name} padded={false} className="px-3 py-2.5">
+            <Card
+              key={name}
+              padded={false}
+              className="px-3 py-2.5"
+              onClick={() => handleCategoryClick(name)}
+            >
               <div className="flex items-center gap-3">
-                <Avatar size="sm" color={cat?.color || '#64748b'}>
-                  {cat ? cat.name.slice(0, 2).toUpperCase() : '?'}
-                </Avatar>
+                <Avatar size="sm" color={cat?.color || '#64748b'} icon={<CategoryIcon name={isKnown ? name : 'Other'} />} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-label truncate">
@@ -454,14 +493,20 @@ function CategoriesTab({
                     </span>
                     {isKnown ? (
                       <button
-                        onClick={onCategoryBudget}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCategoryBudget();
+                        }}
                         className="tap text-[11px] text-accent font-medium active:scale-95"
                       >
                         Set budget &rarr;
                       </button>
                     ) : (
                       <button
-                        onClick={onCategoryBudget}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCategoryBudget();
+                        }}
                         className="tap text-[11px] text-warning font-medium active:scale-95"
                       >
                         Categorise &rarr;
@@ -485,10 +530,18 @@ interface MerchantsTabProps {
 }
 
 function MerchantsTab({ merchants, onAdd }: MerchantsTabProps) {
+  const navigate = useNavigate();
+
   const maxAmt = useMemo(
     () => (merchants.length > 0 ? merchants[0].total : 0),
     [merchants]
   );
+
+  const handleMerchantClick = useCallback(
+    (name: string) => navigate(`/merchant/${encodeURIComponent(name)}`),
+    [navigate]
+  );
+
   if (merchants.length === 0) {
     return (
       <EmptyState
@@ -509,7 +562,12 @@ function MerchantsTab({ merchants, onAdd }: MerchantsTabProps) {
       {merchants.map((m) => {
         const widthPct = maxAmt > 0 ? (m.total / maxAmt) * 100 : 0;
         return (
-          <Card key={m.name} padded={false} className="px-3 py-2.5">
+          <Card
+            key={m.name}
+            padded={false}
+            className="px-3 py-2.5"
+            onClick={() => handleMerchantClick(m.name)}
+          >
             <div className="flex items-center gap-3">
               <Avatar size="sm" color="#64748b">
                 {m.name.slice(0, 2).toUpperCase()}

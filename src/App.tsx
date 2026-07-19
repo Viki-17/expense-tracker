@@ -8,6 +8,8 @@ const AddTransaction = lazy(() => import('./pages/AddTransaction'));
 const SMSImport = lazy(() => import('./pages/SMSImport'));
 const Budgets = lazy(() => import('./pages/Budgets'));
 const Settings = lazy(() => import('./pages/Settings'));
+const CategoryDetail = lazy(() => import('./pages/CategoryDetail'));
+const MerchantDetail = lazy(() => import('./pages/MerchantDetail'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center py-20">
@@ -26,6 +28,8 @@ export default function App() {
           <Route path="/sms" element={<SMSImport />} />
           <Route path="/budgets" element={<Budgets />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/category/:name" element={<CategoryDetail />} />
+          <Route path="/merchant/:name" element={<MerchantDetail />} />
         </Routes>
       </Suspense>
     </Layout>

@@ -1,31 +1,53 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 
 interface SwipeHandlers {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   threshold?: number;
+  disabled?: boolean;
 }
 
-export function useSwipe({ onSwipeLeft, onSwipeRight, threshold = 50 }: SwipeHandlers) {
+export function useSwipe({
+  onSwipeLeft,
+  onSwipeRight,
+  threshold = 50,
+  disabled = false,
+}: SwipeHandlers) {
+  const ref = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const startY = useRef(0);
+  const leftRef = useRef(onSwipeLeft);
+  const rightRef = useRef(onSwipeRight);
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-  }, []);
+  leftRef.current = onSwipeLeft;
+  rightRef.current = onSwipeRight;
 
-  const onPointerUp = useCallback(
-    (e: React.PointerEvent) => {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || disabled) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      startX.current = e.clientX;
+      startY.current = e.clientY;
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
       const dx = e.clientX - startX.current;
       const dy = e.clientY - startY.current;
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
-        if (dx > 0) onSwipeRight?.();
-        else onSwipeLeft?.();
+        if (dx > 0) rightRef.current?.();
+        else leftRef.current?.();
       }
-    },
-    [onSwipeLeft, onSwipeRight, threshold]
-  );
+    };
 
-  return { onPointerDown, onPointerUp };
+    el.addEventListener('pointerdown', handlePointerDown);
+    el.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      el.removeEventListener('pointerdown', handlePointerDown);
+      el.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [threshold, disabled]);
+
+  return ref;
 }
