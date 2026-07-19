@@ -17,13 +17,13 @@ export default function Layout({ children }: { children: ReactNode }) {
         <main className="relative flex-1 overflow-hidden">
           <div className="absolute inset-0 overflow-y-auto lg:overflow-y-auto pb-28 lg:pb-8 scroll-y">
             <div className="max-w-4xl mx-auto px-3 py-4 lg:px-8 lg:py-8 min-h-full">
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div
                   key={location.pathname}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 3 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.1, ease: [0.25, 0.8, 0.25, 1] }}
+                  exit={{ opacity: 0, y: -3 }}
+                  transition={{ duration: 0.08, ease: [0.25, 0.8, 0.25, 1] }}
                   className="min-h-full"
                 >
                   {children}

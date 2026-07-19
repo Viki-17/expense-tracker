@@ -24,7 +24,7 @@ function TransactionRowBase({ t, category, onDelete, showCategoryTag = true, onC
   const handleAvatarClick = useCallback((e: React.MouseEvent) => {
     if (!onCategoryChange || !allCategories) return;
     e.stopPropagation();
-    setPickerOpen(true);
+    setPickerOpen((prev) => !prev);
   }, [onCategoryChange, allCategories]);
 
   const handleCategorySelect = useCallback((catName: string) => {

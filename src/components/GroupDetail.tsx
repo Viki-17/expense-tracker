@@ -183,13 +183,13 @@ export default function GroupDetail({ type }: GroupDetailProps) {
         )}
 
         <div className="mt-2 space-y-2">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             <motion.div
               key={selectedMonth}
-              initial={{ opacity: 0, x: 8 }}
+              initial={{ opacity: 0, x: 6 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.1, ease: [0.25, 0.8, 0.25, 1] }}
+              exit={{ opacity: 0, x: -6 }}
+              transition={{ duration: 0.08, ease: [0.25, 0.8, 0.25, 1] }}
             >
               {txList.length === 0 ? (
                 <EmptyState
