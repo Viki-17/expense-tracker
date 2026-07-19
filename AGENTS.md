@@ -60,17 +60,18 @@
 │       └── plugins/SmsReaderPlugin.java       # Capacitor plugin: reads SMS inbox
 └── src/
     ├── main.tsx              # React entry, BrowserRouter + ThemeProvider
-    ├── App.tsx               # 6 routes, all wrapped in <Layout>
+    ├── App.tsx               # 8 routes, all wrapped in <Layout>
     ├── index.css             # Tailwind directives, safe-area CSS, semantic CSS variables, scroll utilities
     ├── vite-env.d.ts
     ├── types/index.ts        # Transaction, Category, SMSResult, BudgetSummary, DateRange, SortField
-    ├── db/index.ts           # Dexie schema: transactions (++id,type,category,date,amount), categories (++id,name)
+    ├── db/index.ts           # Dexie schema: transactions (++id,type,category,date,amount,source,merchant,[type+date],[category+date]), categories (++id,name)
     ├── hooks/
     │   ├── useTransactions.ts   # useLiveQuery for range-based + CRUD operations
     │   └── useCategories.ts     # useLiveQuery, CRUD, protects default categories from deletion
     ├── utils/
     │   ├── smsParser.ts         # parseSMS(), parseMultipleSMS() — 295 lines, 12 rule categories, 13 merchants
     │   ├── formatters.ts        # INR currency formatting, date helpers (today, startOfMonth, etc.)
+    │   ├── categories.ts        # categoryInitial, categoryColor, getCategoryMeta, matchesMerchant
     │   └── platform.ts          # isNativePlatform(), getPlatform() — Capacitor API
     ├── plugins/sms-reader/
     │   ├── definitions.ts       # TypeScript interface: SmsReaderPlugin
@@ -81,17 +82,20 @@
     │   ├── Sidebar.tsx          # 6 nav items, fixed 256px left sidebar
     │   ├── BottomNav.tsx        # 5-item mobile bottom tab bar
     │   ├── Dashboard.tsx        # Apple HIG-style dashboard: month picker, tabs, spend ring, transactions/categories/merchants
+    │   ├── GroupDetail.tsx      # Reusable category/merchant detail view: month chart + transaction list
     │   ├── TransactionForm.tsx  # Amount/category/description/date, full + compact modes
     │   ├── TransactionList.tsx  # All-time virtualized transaction list (react-window), filterable/sortable/deletable
     │   ├── SMSReader.tsx        # Native scan (SmsReader plugin) + manual SMS paste/parse UI
     │   ├── Icons.tsx            # SVG icon components (Heroicons-style)
-    │   └── ui/                  # Reusable primitives: Button, Card, Avatar, Tabs, TopBar, VirtualList, etc.
+    │   └── ui/                  # Reusable primitives: Button, Card, Avatar, Tabs, TopBar, VirtualList, GroupBarChart, etc.
     └── pages/
         ├── Home.tsx             # → <Dashboard />
         ├── Transactions.tsx     # → <TransactionList />
         ├── AddTransaction.tsx   # Standalone add transaction page, navigates to /transactions on submit
         ├── SMSImport.tsx        # → <SmartSMSReader />
         ├── Budgets.tsx          # Per-category monthly budget tracking with progress bars
+        ├── CategoryDetail.tsx   # → <GroupDetail type="category" />
+        ├── MerchantDetail.tsx   # → <GroupDetail type="merchant" />
         └── Settings.tsx         # Export/import JSON, reset data, add custom categories, theme toggle, app info
 ```
 
@@ -104,16 +108,18 @@
 | `/add` | AddTransaction → TransactionForm | Add Transaction |
 | `/sms` | SMSImport → SmartSMSReader | SMS Import |
 | `/budgets` | Budgets | Budgets |
+| `/category/:name` | CategoryDetail → GroupDetail | Category Detail |
+| `/merchant/:name` | MerchantDetail → GroupDetail | Merchant Detail |
 | `/settings` | Settings | Settings |
 
 BrowserRouter with optional basename via `VITE_ROUTER_BASE` env var (for deployment sub-paths).
 
 ## Database (Dexie / IndexedDB)
 
-**DB name**: `ExpenseTrackerDB`, v1
+**DB name**: `ExpenseTrackerDB`, v4
 
 **Tables**:
-- `transactions`: `++id, type, category, date, amount` — Stores `Transaction` objects
+- `transactions`: `++id, type, category, date, amount, source, merchant, [type+date], [category+date]` — Stores `Transaction` objects
 - `categories`: `++id, name` — Stores `Category` objects, pre-populated with 14 defaults
 
 **Default categories** (14):
@@ -124,6 +130,10 @@ Food & Dining, Shopping, Transport, Bills & Utilities, Entertainment, Groceries,
 - `getCategoryBreakdown(start, end)` — aggregates by category
 - `getDailyTotals(start, end)` — date-bucketed aggregation
 - `getTotalByType(type, start?, end?)` — sum by expense/income
+- `getCategoryTransactionsInRange(category, start, end)` — indexed category+date query
+- `getMerchantTransactionsInRange(merchant, start, end)` — indexed date query + in-memory partial match
+- `getCategoryMonthlyTotals(category, months)` — monthly rollup for a category
+- `getMerchantMonthlyTotals(merchant, months)` — monthly rollup for a merchant (partial match)
 
 ## SMS Parser (`smsParser.ts`)
 

@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { db, DEFAULT_CATEGORIES } from '../db';
 import { useCategories } from '../hooks/useCategories';
 import { useTheme } from '../contexts/ThemeProvider';
-import { getAutoImportMerchants, removeAutoImportMerchant } from '../utils/autoImport';
+import { getAutoImportMerchants, removeAutoImportMerchant, clearAutoImportMerchants } from '../utils/autoImport';
 import { TopBar } from '../components/ui/TopBar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { IconButton } from '../components/ui/IconButton';
-import { ArrowLeftIcon, SunIcon, MoonIcon, DownloadIcon, UploadIcon, TrashIcon } from '../components/Icons';
+import { ArrowLeftIcon, SunIcon, MoonIcon, DownloadIcon, UploadIcon, TrashIcon, CategoryIcon } from '../components/Icons';
 
 export default function Settings() {
   const { categories, addCategory } = useCategories();
@@ -65,12 +65,13 @@ export default function Settings() {
     await db.transactions.clear();
     await db.categories.clear();
     await db.categories.bulkAdd(DEFAULT_CATEGORIES);
+    clearAutoImportMerchants();
     window.location.reload();
   }, []);
 
   const handleAddCategory = useCallback(async () => {
     if (!newCatName.trim()) return;
-    await addCategory({ name: newCatName.trim(), icon: '#', color: newCatColor });
+    await addCategory({ name: newCatName.trim(), icon: 'other', color: newCatColor });
     setNewCatName('');
     setNewCatColor('#6366f1');
   }, [newCatName, newCatColor, addCategory]);
@@ -167,7 +168,7 @@ export default function Settings() {
                   className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
                   style={{ color: cat.color || '#64748b' }}
                 >
-                  {cat.name.slice(0, 2).toUpperCase()}
+                  <CategoryIcon name={cat.name} className="w-3.5 h-3.5" />
                 </span>
                 <span className="text-label font-medium truncate">{cat.name}</span>
               </div>

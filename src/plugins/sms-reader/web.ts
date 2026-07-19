@@ -12,7 +12,7 @@ export class SmsReaderWeb extends WebPlugin implements SmsReaderPlugin {
     return { granted: false };
   }
 
-  async getMessages(_options: { maxCount?: number; daysBack?: number }): Promise<{ messages: SmsMessage[] }> {
+  async getMessages(_options: { maxCount?: number; daysBack?: number; startDate?: string; endDate?: string }): Promise<{ messages: SmsMessage[] }> {
     console.warn('SmsReader: Not available on web. Use the paste-based SMS import instead.');
     return { messages: [] };
   }

@@ -10,6 +10,7 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    scrollbar-width: none;
   }
   body {
     overscroll-behavior: none;
@@ -99,12 +100,7 @@
   .gpu { transform: translateZ(0); will-change: transform; }
 }
 
-::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgb(var(--tertiary) / 0.4);
-  border-radius: 999px;
-}
+::-webkit-scrollbar { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

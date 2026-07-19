@@ -9,5 +9,5 @@ export interface SmsMessage {
 export interface SmsReaderPlugin {
   checkPermission(): Promise<{ granted: boolean }>;
   requestPermission(): Promise<{ granted: boolean }>;
-  getMessages(options: { maxCount?: number; daysBack?: number }): Promise<{ messages: SmsMessage[] }>;
+  getMessages(options: { maxCount?: number; daysBack?: number; startDate?: string; endDate?: string }): Promise<{ messages: SmsMessage[] }>;
 }

@@ -1,5 +1,5 @@
 import { FixedSizeList as List, type ListChildComponentProps } from 'react-window';
-import { forwardRef, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo, useCallback } from 'react';
 
 interface VirtualListProps<T> {
   items: T[];
@@ -12,6 +12,19 @@ interface VirtualListProps<T> {
   className?: string;
 }
 
+interface ItemData<T> {
+  items: T[];
+  renderRow: (item: T, index: number) => ReactNode;
+}
+
+function Row({ index, style, data }: ListChildComponentProps<ItemData<unknown>>) {
+  return (
+    <div style={style} className="px-0">
+      {data.renderRow(data.items[index], index)}
+    </div>
+  );
+}
+
 export function VirtualList<T>({
   items,
   rowHeight,
@@ -21,34 +34,29 @@ export function VirtualList<T>({
   overscan = 6,
   className = '',
 }: VirtualListProps<T>) {
-  const Row = useMemo(
-    () =>
-      ({ index, style }: ListChildComponentProps) => (
-        <div style={style} className="px-0">
-          {renderRow(items[index], index)}
-        </div>
-      ),
+  const itemData = useMemo<ItemData<T>>(
+    () => ({ items, renderRow }),
     [items, renderRow]
   );
 
-  const keyExtractor = useMemo(
-    () =>
-      (index: number): string | number =>
-        itemKey ? itemKey(items[index], index) : index,
+  const keyExtractor = useCallback(
+    (index: number): string | number =>
+      itemKey ? itemKey(items[index], index) : index,
     [itemKey, items]
   );
 
   return (
-    <List
+    <List<ItemData<T>>
       height={height}
       itemCount={items.length}
       itemSize={rowHeight}
       width="100%"
       overscanCount={overscan}
       itemKey={keyExtractor}
+      itemData={itemData}
       className={className}
     >
-      {Row}
+      {Row as unknown as (props: ListChildComponentProps<ItemData<T>>) => ReactNode}
     </List>
   );
 }

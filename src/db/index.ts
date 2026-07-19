@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { Transaction, Category } from '../types';
+import { matchesMerchant } from '../utils/categories';
 
 export class ExpenseDB extends Dexie {
   transactions!: Table<Transaction, number>;
@@ -7,8 +8,8 @@ export class ExpenseDB extends Dexie {
 
   constructor() {
     super('ExpenseTrackerDB');
-    this.version(3).stores({
-      transactions: '++id, type, category, date, amount, source, [type+date]',
+    this.version(4).stores({
+      transactions: '++id, type, category, date, amount, source, merchant, [type+date], [category+date]',
       categories: '++id, name',
     });
     this.on('populate', () => this.populate());
@@ -100,6 +101,83 @@ export class ExpenseDB extends Dexie {
     }
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
   }
+
+  async getCategoryTransactionsInRange(category: string, startDate: string, endDate: string): Promise<Transaction[]> {
+    return this.transactions
+      .where('[category+date]')
+      .between([category, startDate], [category, endDate], true, true)
+      .reverse()
+      .sortBy('date');
+  }
+
+  async getMerchantTransactionsInRange(merchant: string, startDate: string, endDate: string): Promise<Transaction[]> {
+    const transactions = await this.transactions
+      .where('date')
+      .between(startDate, endDate, true, true)
+      .toArray();
+    return transactions
+      .filter((t) => matchesMerchant(t, merchant))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  async getCategoryMonthlyTotals(category: string, months: number): Promise<{ month: string; total: number }[]> {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const sd = start.toISOString().split('T')[0];
+    const ed = end.toISOString().split('T')[0];
+
+    const transactions = await this.transactions
+      .where('[category+date]')
+      .between([category, sd], [category, ed], true, true)
+      .toArray();
+
+    const map = new Map<string, number>();
+    for (const t of transactions) {
+      if (t.type !== 'expense') continue;
+      const m = t.date.slice(0, 7);
+      map.set(m, (map.get(m) || 0) + t.amount);
+    }
+
+    const result: { month: string; total: number }[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+      result.push({ month: key, total: map.get(key) || 0 });
+      current.setMonth(current.getMonth() + 1);
+    }
+    return result;
+  }
+
+  async getMerchantMonthlyTotals(merchant: string, months: number): Promise<{ month: string; total: number }[]> {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const sd = start.toISOString().split('T')[0];
+    const ed = end.toISOString().split('T')[0];
+
+    const transactions = await this.transactions
+      .where('date')
+      .between(sd, ed, true, true)
+      .toArray();
+
+    const map = new Map<string, number>();
+    for (const t of transactions) {
+      if (t.type !== 'expense') continue;
+      if (!matchesMerchant(t, merchant)) continue;
+      const m = t.date.slice(0, 7);
+      map.set(m, (map.get(m) || 0) + t.amount);
+    }
+
+    const result: { month: string; total: number }[] = [];
+    const current = new Date(start);
+    while (current <= end) {
+      const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+      result.push({ month: key, total: map.get(key) || 0 });
+      current.setMonth(current.getMonth() + 1);
+    }
+    return result;
+  }
 }
 
 function getDatesInRange(start: string, end: string): string[] {
@@ -122,18 +200,18 @@ function getDatesInRange(start: string, end: string): string[] {
 export const db = new ExpenseDB();
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  { name: 'Food & Dining', icon: '🍔', color: '#f97316' },
-  { name: 'Shopping', icon: '🛍️', color: '#ec4899' },
-  { name: 'Transport', icon: '🚗', color: '#3b82f6' },
-  { name: 'Bills & Utilities', icon: '📄', color: '#6366f1' },
-  { name: 'Entertainment', icon: '🎬', color: '#8b5cf6' },
-  { name: 'Groceries', icon: '🛒', color: '#22c55e' },
-  { name: 'Healthcare', icon: '🏥', color: '#ef4444' },
-  { name: 'Education', icon: '📚', color: '#06b6d4' },
-  { name: 'Travel', icon: '✈️', color: '#14b8a6' },
-  { name: 'Rent', icon: '🏠', color: '#78716c' },
-  { name: 'Investment', icon: '📈', color: '#a855f7' },
-  { name: 'Salary', icon: '💰', color: '#22c55e' },
-  { name: 'Freelance', icon: '💻', color: '#0ea5e9' },
-  { name: 'Other', icon: '📌', color: '#64748b' },
+  { name: 'Food & Dining', icon: 'food', color: '#f97316' },
+  { name: 'Shopping', icon: 'shopping', color: '#ec4899' },
+  { name: 'Transport', icon: 'transport', color: '#3b82f6' },
+  { name: 'Bills & Utilities', icon: 'bills', color: '#6366f1' },
+  { name: 'Entertainment', icon: 'entertainment', color: '#8b5cf6' },
+  { name: 'Groceries', icon: 'groceries', color: '#22c55e' },
+  { name: 'Healthcare', icon: 'healthcare', color: '#ef4444' },
+  { name: 'Education', icon: 'education', color: '#06b6d4' },
+  { name: 'Travel', icon: 'travel', color: '#14b8a6' },
+  { name: 'Rent', icon: 'rent', color: '#78716c' },
+  { name: 'Investment', icon: 'investment', color: '#a855f7' },
+  { name: 'Salary', icon: 'salary', color: '#22c55e' },
+  { name: 'Freelance', icon: 'freelance', color: '#0ea5e9' },
+  { name: 'Other', icon: 'other', color: '#64748b' },
 ];

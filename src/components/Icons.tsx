@@ -196,3 +196,141 @@ export function WalletIcon(props: IconProps) {
     </svg>
   );
 }
+
+/* ──────── Category-specific icons ────────
+   Slightly heavier stroke (1.75) and simplified paths so they stay
+   crisp at the small sizes (14–20 px) used inside avatars.     */
+
+const categoryBase = (props: IconProps) => ({
+  xmlns: 'http://www.w3.org/2000/svg',
+  fill: 'none',
+  viewBox: '0 0 24 24',
+  strokeWidth: 1.75,
+  stroke: 'currentColor',
+  ...props,
+});
+
+export function FoodDiningIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      {/* fork */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v9M10 3v18M12 3v9M8 12h4" />
+      {/* knife */}
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 3v18M16 3c1.5 0 3 1 3 3.5v7a2 2 0 01-2 2h-1" />
+    </svg>
+  );
+}
+
+export function ShoppingBagIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+    </svg>
+  );
+}
+
+export function CarIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-8.728 1.124 1.124 0 00-.923-.523h-12.5c-.382 0-.727.196-.923.523A17.903 17.903 0 003.375 17.376c-.04.62.469 1.124 1.09 1.124M3.375 14.25l1.5-4.5m13.5 4.5l-1.5-4.5M6.75 5.25h10.5" />
+    </svg>
+  );
+}
+
+export function DocumentTextIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 2.25H5.625c-.621 0-1.125.504-1.125 1.125v13.5c0 .621.504 1.125 1.125 1.125h10.5c.621 0 1.125-.504 1.125-1.125V12m-9-8.25h.008v.008H8.25V3.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM8.25 12h7.5m-7.5 3h7.5m-7.5 3h4.5" />
+    </svg>
+  );
+}
+
+export function FilmIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 6.75h17.25M3.375 12h17.25m-16.5 5.25h15.75M3.375 6.75h17.25v10.5a2.25 2.25 0 01-2.25 2.25H5.625a2.25 2.25 0 01-2.25-2.25V6.75zm0 0l2.625-2.625m12 0L15.375 6.75m-9 12.75l2.625 2.625m6.75 0L18.375 19.5" />
+    </svg>
+  );
+}
+
+export function ShoppingCartIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121 0 2.098-.87 2.235-1.98l1.222-8.548c.166-1.166-.74-2.22-1.921-2.22H7.5M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+    </svg>
+  );
+}
+
+export function HeartIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+    </svg>
+  );
+}
+
+export function AcademicCapIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4L3 9l9 5 9-5-9-5z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14v6" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9v5c0 2.5 4 4.5 9 4.5s9-2 9-4.5V9" />
+    </svg>
+  );
+}
+
+export function PlaneIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.27 3.27A1.15 1.15 0 014.84 2.02L21 12 4.84 21.98A1.15 1.15 0 013.27 20.73L6 12zm0 0h15" />
+    </svg>
+  );
+}
+
+export function TrendingUpIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.518l2.13-1.236M21.75 3.75h-5.25m5.25 0v5.25m0-5.25l-4.688 4.688" />
+    </svg>
+  );
+}
+
+export function BanknotesIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+    </svg>
+  );
+}
+
+export function BriefcaseIcon(props: IconProps) {
+  return (
+    <svg {...categoryBase(props)}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7V6a2 2 0 00-2-2h-4a2 2 0 00-2 2v1" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12v.01" />
+    </svg>
+  );
+}
+
+const ICONS_BY_CATEGORY: Record<string, React.FC<IconProps>> = {
+  'Food & Dining': FoodDiningIcon,
+  'Shopping': ShoppingBagIcon,
+  'Transport': CarIcon,
+  'Bills & Utilities': DocumentTextIcon,
+  'Entertainment': FilmIcon,
+  'Groceries': ShoppingCartIcon,
+  'Healthcare': HeartIcon,
+  'Education': AcademicCapIcon,
+  'Travel': PlaneIcon,
+  'Rent': HomeIcon,
+  'Investment': TrendingUpIcon,
+  'Salary': BanknotesIcon,
+  'Freelance': BriefcaseIcon,
+  'Other': TagIcon,
+};
+
+export function CategoryIcon({ name, className }: { name: string; className?: string }) {
+  const Icon = ICONS_BY_CATEGORY[name] || TagIcon;
+  return <Icon className={className} />;
+}

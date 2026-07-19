@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import type { Transaction } from '../types';
@@ -14,15 +15,19 @@ export function useTransactions(startDate?: string, endDate?: string) {
     [startDate, endDate]
   );
 
-  const addTransaction = async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
+  const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
     await db.transactions.add({ ...t, createdAt: new Date().toISOString() });
-  };
+  }, []);
 
-  const deleteTransaction = async (id: number) => {
+  const deleteTransaction = useCallback(async (id: number) => {
     await db.transactions.delete(id);
-  };
+  }, []);
 
-  return { transactions: transactions || [], addTransaction, deleteTransaction };
+  const updateTransaction = useCallback(async (id: number, updates: Partial<Transaction>) => {
+    await db.transactions.update(id, updates);
+  }, []);
+
+  return { transactions: transactions || [], addTransaction, deleteTransaction, updateTransaction };
 }
 
 export function useTransactionStats(startDate?: string, endDate?: string) {

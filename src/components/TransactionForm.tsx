@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useCategories } from '../hooks/useCategories';
 import type { Transaction } from '../types';
 import { today } from '../utils/formatters';
+import { CategoryIcon } from './Icons';
 
 interface Props {
   onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>) => void;
@@ -80,12 +81,23 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
         </div>
         <div>
           <label className={LABEL_CLASS}>Category</label>
-          <select className={INPUT_CLASS} value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Select...</option>
+          <div className="grid grid-cols-3 gap-2">
             {filteredCategories.map((c) => (
-              <option key={c.name} value={c.name}>{c.icon} {c.name}</option>
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => setCategory(c.name)}
+                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-xs transition-all ${
+                  category === c.name
+                    ? 'bg-primary-50 ring-2 ring-primary-500/30 text-primary-700 font-medium'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <CategoryIcon name={c.name} className="w-5 h-5" />
+                <span className="leading-tight text-center">{c.name}</span>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
         <button type="submit" className="w-full py-3 bg-primary-500 text-white rounded-xl font-medium text-sm hover:bg-primary-600 transition-colors">
           Add {type === 'expense' ? 'Expense' : 'Income'}
@@ -152,7 +164,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <span className="text-lg">{c.icon}</span>
+              <CategoryIcon name={c.name} className="w-5 h-5" />
               <span className="leading-tight text-center">{c.name}</span>
             </button>
           ))}

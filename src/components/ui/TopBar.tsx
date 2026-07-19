@@ -7,17 +7,18 @@ interface TopBarProps {
   leading?: ReactNode;
   trailing?: ReactNode;
   sticky?: boolean;
+  borderless?: boolean;
 }
 
-export function TopBar({ title, subtitle, leading, trailing, sticky = true }: TopBarProps) {
+export function TopBar({ title, subtitle, leading, trailing, sticky = true, borderless = false }: TopBarProps) {
   const safeArea = useSafeArea();
   const top = safeArea.top || 0;
   const inlineStyle: React.CSSProperties = top > 0 ? { paddingTop: top + 8 } : {};
   return (
     <header
-      className={`safe-top bg-canvas/80 backdrop-blur-xl border-b border-separator/60 ${
-        sticky ? 'sticky top-0 z-30' : ''
-      }`}
+      className={`safe-top bg-canvas/80 backdrop-blur-xl ${
+        borderless ? '' : 'border-b border-separator/60'
+      } ${sticky ? 'sticky top-0 z-30' : ''}`}
       style={inlineStyle}
     >
       <div className="flex items-center gap-3 px-4 pb-3">

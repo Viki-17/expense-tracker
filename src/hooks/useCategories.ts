@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_CATEGORIES } from '../db';
 import type { Category } from '../types';
@@ -17,13 +18,13 @@ export function useCategories() {
     const cat = await db.categories.get(id);
     if (!cat) return;
     const defaultCat = DEFAULT_CATEGORIES.find((d) => d.name === cat.name);
-    if (defaultCat) return; // Don't delete default categories
+    if (defaultCat) return;
     await db.categories.delete(id);
   };
 
-  const getCategory = (name: string): Category | undefined => {
+  const getCategory = useCallback((name: string): Category | undefined => {
     return categories.find((c) => c.name === name) || DEFAULT_CATEGORIES.find((c) => c.name === name);
-  };
+  }, [categories]);
 
   return { categories: categories.length > 0 ? categories : DEFAULT_CATEGORIES, addCategory, updateCategory, deleteCategory, getCategory };
 }

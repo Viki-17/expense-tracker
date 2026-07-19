@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { parseMultipleSMS } from '../utils/smsParser';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency, formatDate, daysAgo, today } from '../utils/formatters';
 import type { SMSResult, Transaction } from '../types';
 import { db } from '../db';
 import { isNativePlatform } from '../utils/platform';
@@ -60,11 +60,18 @@ export default function SmartSMSReader() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [groupMode, setGroupMode] = useState<GroupMode>('week');
   const [selectedSMS, setSelectedSMS] = useState<SMSResult | null>(null);
+  const [startDate, setStartDate] = useState(() => daysAgo(730));
+  const [endDate, setEndDate] = useState(() => today());
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheck | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedForImport, setSelectedForImport] = useState<Set<number>>(new Set());
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const smsRef = useRef<HTMLDivElement>(null);
+  const dateRangeRef = useRef({ startDate, endDate });
+
+  useEffect(() => {
+    dateRangeRef.current = { startDate, endDate };
+  }, [startDate, endDate]);
 
   const isNative = isNativePlatform();
 
@@ -220,9 +227,10 @@ export default function SmartSMSReader() {
     if (!isNative || !permissionGranted) return;
     setLoading(true);
     setMessage('Scanning SMS inbox for transactions...');
+    const { startDate: scanStart, endDate: scanEnd } = dateRangeRef.current;
     try {
       const [smsRes, existingRes] = await Promise.all([
-        SmsReader.getMessages({ maxCount: 1000, daysBack: 730 }),
+        SmsReader.getMessages({ maxCount: 1000, startDate: scanStart, endDate: scanEnd }),
         db.transactions.where('source').equals('sms').toArray(),
       ]);
       const existingTexts = new Set(existingRes.map((t) => t.smsText).filter(Boolean) as string[]);
@@ -350,6 +358,32 @@ export default function SmartSMSReader() {
             Scan your SMS inbox to find bank & UPI transaction messages.
             Only messages that look like transactions are read.
           </p>
+
+          <div className="space-y-3 mb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] text-white/70 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-white/70 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-white/60">Default range: last 2 years</p>
+          </div>
 
           {!permissionGranted ? (
             <button

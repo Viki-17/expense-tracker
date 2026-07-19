@@ -27,3 +27,7 @@ export function removeAutoImportMerchant(merchant: string): void {
 export function isAutoImportMerchant(merchant: string): boolean {
   return getAutoImportMerchants().some((m) => m.toLowerCase() === merchant.toLowerCase());
 }
+
+export function clearAutoImportMerchants(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}

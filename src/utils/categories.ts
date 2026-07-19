@@ -1,4 +1,4 @@
-import type { Category } from '../types';
+import type { Category, Transaction } from '../types';
 
 export function categoryInitial(name: string): string {
   if (!name) return '?';
@@ -13,4 +13,11 @@ export function categoryColor(category: Category | undefined, fallback = '#64748
 
 export function getCategoryMeta(categories: Category[]): Map<string, Category> {
   return new Map(categories.map((c) => [c.name, c]));
+}
+
+export function matchesMerchant(t: Transaction, name: string): boolean {
+  const lower = name.toLowerCase();
+  const merchant = (t.merchant || '').toLowerCase();
+  const desc = (t.description || '').toLowerCase();
+  return merchant.includes(lower) || desc.includes(lower);
 }

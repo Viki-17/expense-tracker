@@ -1,25 +1,32 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactionStats } from '../hooks/useTransactions';
-import { startOfMonth, endOfMonth, formatCurrency } from '../utils/formatters';
+import { startOfMonth, endOfMonth, formatCurrency, monthLabel } from '../utils/formatters';
 import { TopBar } from '../components/ui/TopBar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
-import { IconButton } from '../components/ui/IconButton';
-import { ArrowLeftIcon } from '../components/Icons';
-import { categoryInitial } from '../utils/categories';
+import { CategoryIcon } from '../components/Icons';
 
 const INCOME_CATEGORIES_SET = new Set(['Salary', 'Freelance', 'Investment']);
 
 export default function Budgets() {
   const { categories, updateCategory } = useCategories();
-  const navigate = useNavigate();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [budgetValue, setBudgetValue] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
 
-  const rangeDates = useMemo(() => ({ start: startOfMonth(), end: endOfMonth() }), []);
+  const rangeDates = useMemo(() => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    const start = `${selectedMonth}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    return { start, end: `${selectedMonth}-${String(lastDay).padStart(2, '0')}`, date: d };
+  }, [selectedMonth]);
+
   const stats = useTransactionStats(rangeDates.start, rangeDates.end);
 
   const expenseCategories = useMemo(
@@ -49,20 +56,40 @@ export default function Budgets() {
     setBudgetValue(currentBudget?.toString() || '');
   }, []);
 
-  const monthLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const handlePrevMonth = useCallback(() => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }, [selectedMonth]);
+
+  const handleNextMonth = useCallback(() => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const d = new Date(y, m, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }, [selectedMonth]);
+
+  const monthStr = useMemo(() => monthLabel(rangeDates.date), [rangeDates.date]);
 
   return (
     <div>
       <TopBar
         title="Budgets"
-        subtitle={monthLabel}
-        leading={
-          <IconButton label="Back" onClick={() => navigate(-1)}>
-            <ArrowLeftIcon className="w-5 h-5" />
-          </IconButton>
-        }
+        subtitle={monthStr}
       />
       <div className="px-4 max-w-2xl mx-auto w-full pt-4 space-y-4" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
+        <div className="flex items-center justify-between">
+          <button onClick={handlePrevMonth} className="tap p-1.5 -ml-1.5 rounded-lg text-secondary hover:text-label active:scale-90">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="text-sm font-semibold text-label">{monthStr}</span>
+          <button onClick={handleNextMonth} className="tap p-1.5 -mr-1.5 rounded-lg text-secondary hover:text-label active:scale-90">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
         <Card>
           <p className="text-xs text-tertiary">
             Set spending limits for each category to track your expenses better.
@@ -86,7 +113,7 @@ export default function Budgets() {
                       className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs"
                       style={{ backgroundColor: `${cat.color || '#64748b'}26`, color: cat.color || '#64748b' }}
                     >
-                      {categoryInitial(cat.name)}
+                      <CategoryIcon name={cat.name} className="w-4 h-4" />
                     </div>
                     <div>
                       <span className="text-sm font-semibold text-label">{cat.name}</span>

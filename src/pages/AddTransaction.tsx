@@ -9,7 +9,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Label } from '../components/ui/Field';
 import { IconButton } from '../components/ui/IconButton';
-import { ArrowLeftIcon } from '../components/Icons';
+import { ArrowLeftIcon, CategoryIcon } from '../components/Icons';
 
 const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Other'];
 const EXCLUDED_FROM_EXPENSE = new Set(['Salary', 'Freelance', 'Investment']);
@@ -119,10 +119,10 @@ export default function AddTransaction() {
                     }`}
                   >
                     <span
-                      className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: `${c.color || '#64748b'}26`, color: c.color || '#64748b' }}
                     >
-                      {c.name.slice(0, 2).toUpperCase()}
+                      <CategoryIcon name={c.name} className="w-4 h-4" />
                     </span>
                     <span className="leading-tight text-center">{c.name}</span>
                   </button>

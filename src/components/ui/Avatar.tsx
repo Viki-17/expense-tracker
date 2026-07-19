@@ -4,6 +4,7 @@ interface AvatarProps {
   size?: 'sm' | 'md' | 'lg';
   color?: string;
   children?: ReactNode;
+  icon?: ReactNode;
   className?: string;
 }
 
@@ -13,18 +14,23 @@ const sizeCls = {
   lg: 'w-14 h-14 text-lg',
 };
 
-export function Avatar({ size = 'md', color, children, className = '' }: AvatarProps) {
+const iconSize = {
+  sm: 'w-4 h-4',
+  md: 'w-5 h-5',
+  lg: 'w-6 h-6',
+};
+
+export function Avatar({ size = 'md', color, children, icon, className = '' }: AvatarProps) {
   const bg = color || 'rgb(var(--surface-2))';
   return (
     <div
       className={`flex items-center justify-center rounded-full font-semibold shrink-0 contain-layout ${sizeCls[size]} ${className}`}
       style={{
-        // Soft tinted background derived from the category color
         backgroundColor: tintFrom(color) || bg,
         color: color || 'rgb(var(--label))',
       }}
     >
-      {children}
+      {icon ? <span className={iconSize[size]}>{icon}</span> : children}
     </div>
   );
 }

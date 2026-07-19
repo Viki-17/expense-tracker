@@ -130,6 +130,15 @@ const BANK_RULES: SMSRule[] = [
     type: 'expense',
   },
   {
+    name: 'Provident Fund / EPF',
+    patterns: [
+      /(?:provident\s*fund|EPF|PF\s*(?:account|balance|contribution))/i,
+      /contribution.*?due\s*month/i,
+    ],
+    category: 'Investment',
+    type: 'income',
+  },
+  {
     name: 'Generic Debit/Credit',
     patterns: [
       /(?:debited|debit\b|spent|paid|withdrawn|purchase(?:d)?\s+(?:at|of|from)?)\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
@@ -161,6 +170,31 @@ const MERCHANT_PATTERNS: [RegExp, string][] = [
 export function parseSMS(message: string): SMSResult | null {
   const cleaned = message.replace(/\s+/g, ' ').trim();
 
+  const NON_TXN_PATTERNS = [
+    /\bCONGRATULATIONS\b/,
+    /you\s*(?:'ve|have)\s*unlocked/i,
+    /\b(?:click|tap)\s+here\b/i,
+    /\blucky\s+draw\b/i,
+    /\b(?:earn|get|win|avail)\s+(?:flat\s+)?(?:Rs\.?|INR)?\s*[\d,]+\s*(?:cashback|reward)/i,
+    /\bcashback\s+on\s+your\b/i,
+    /\b(?:offer|promo)\s+(?:ends|valid|today)/i,
+    /\bapply\s+now\b/i,
+    /\b(?:short\s*url|bit\.ly|tinyurl|goo\.gl|airtel\.in)\b/i,
+    /\b(?:scheduled|routine)\s+maintenance\b/i,
+    /\bservices?\s+will\s+not\s+be\s+available\b/i,
+    /\bregret\s+(?:the\s+)?inconvenience\b/i,
+    /\boutage\b/i,
+    /\b(?:net\s*banking|mobile\s*banking)\s*(?:is|will|has)\s+(?:down|unavailable)\b/i,
+    /\byour\s+(?:account|card)\s+will\s+be\s+(?:debited|charged)\s/i,
+    /\bupdate\s+your\s+(?:kyc|pan|aadhaar)\b/i,
+    /\bstatement\s+(?:is\s+(?:sent|generated|ready|issued|prepared)|was\s+(?:sent|generated|ready|issued|prepared))\b/i,
+    /\btotal\s+(?:of|amount)?\s*(?:Rs\.?|INR)?\s*[\d,]+.*?(?:or\s+minimum|due\s+by)\b/i,
+  ];
+
+  if (NON_TXN_PATTERNS.some((p) => p.test(cleaned))) {
+    return null;
+  }
+
   const TXN_KEYWORDS = /\b(?:debit(?:ed)?|credit(?:ed)?|spent|paid|withdr(?:awn|aw)|purchased?|deposited?|neft|imps|rtgs|upi|balance|avl\s*bal|available|sent|received|transferred|ref\s*no|txn|transaction|emi|recharge|bill\s*pay|payment)\b/i;
   const hasCurrency = /(?:Rs\.?|INR)\s*[\d,]+/i;
 
@@ -176,6 +210,7 @@ export function parseSMS(message: string): SMSResult | null {
 
   // Extract amount - look for common Indian bank SMS amount patterns
   const amountPatterns = [
+    /(?:contribution|deposit|premium|installment)\s+(?:of|for)?\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
     /(?:Rs\.?|INR)\s*([\d,]+\.?\d*)/i,
     /([\d,]+\.?\d*)\s*(?:Rs\.?|INR)/i,
     /(?:amount\s*(?:of\s*)?|amt\.?\s*)(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
@@ -187,6 +222,10 @@ export function parseSMS(message: string): SMSResult | null {
     if (match) {
       const amt = parseFloat(match[1].replace(/,/g, ''));
       if (amt > 0) {
+        const afterMatch = cleaned.substring(match.index! + match[0].length);
+        if (/^\s*[-/\.]\s*\d{2,4}\b/.test(afterMatch)) {
+          continue;
+        }
         amount = amt;
         break;
       }

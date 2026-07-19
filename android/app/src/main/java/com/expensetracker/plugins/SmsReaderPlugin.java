@@ -14,6 +14,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -91,8 +92,47 @@ public class SmsReaderPlugin extends Plugin {
 
         int maxCount = call.getInt("maxCount", 1000);
         int daysBack = call.getInt("daysBack", 730);
+        String startDate = call.getString("startDate");
+        String endDate = call.getString("endDate");
 
-        long sinceMillis = System.currentTimeMillis() - (daysBack * 24L * 60L * 60L * 1000L);
+        long startMillis;
+        long endMillis = System.currentTimeMillis();
+        boolean hasRange = false;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+
+        if (startDate != null && !startDate.isEmpty()) {
+            try {
+                Date parsedStart = dateFormat.parse(startDate);
+                Calendar startCal = Calendar.getInstance();
+                startCal.setTime(parsedStart);
+                startCal.set(Calendar.HOUR_OF_DAY, 0);
+                startCal.set(Calendar.MINUTE, 0);
+                startCal.set(Calendar.SECOND, 0);
+                startCal.set(Calendar.MILLISECOND, 0);
+                startMillis = startCal.getTimeInMillis();
+                hasRange = true;
+            } catch (Exception e) {
+                startMillis = System.currentTimeMillis() - (daysBack * 24L * 60L * 60L * 1000L);
+            }
+        } else {
+            startMillis = System.currentTimeMillis() - (daysBack * 24L * 60L * 60L * 1000L);
+        }
+
+        if (endDate != null && !endDate.isEmpty()) {
+            try {
+                Date parsedEnd = dateFormat.parse(endDate);
+                Calendar endCal = Calendar.getInstance();
+                endCal.setTime(parsedEnd);
+                endCal.set(Calendar.HOUR_OF_DAY, 23);
+                endCal.set(Calendar.MINUTE, 59);
+                endCal.set(Calendar.SECOND, 59);
+                endCal.set(Calendar.MILLISECOND, 999);
+                endMillis = endCal.getTimeInMillis();
+                hasRange = true;
+            } catch (Exception e) {
+                // keep default endMillis
+            }
+        }
 
         JSObject ret = new JSObject();
         JSArray messages = new JSArray();
@@ -101,8 +141,15 @@ public class SmsReaderPlugin extends Plugin {
         try {
             Uri uri = Uri.parse("content://sms/inbox");
             String[] projection = {"_id", "address", "body", "date", "read"};
-            String selection = "date > ?";
-            String[] selectionArgs = {String.valueOf(sinceMillis)};
+            String selection;
+            String[] selectionArgs;
+            if (hasRange) {
+                selection = "date >= ? AND date <= ?";
+                selectionArgs = new String[]{String.valueOf(startMillis), String.valueOf(endMillis)};
+            } else {
+                selection = "date > ?";
+                selectionArgs = new String[]{String.valueOf(startMillis)};
+            }
             String sortOrder = "date DESC LIMIT " + maxCount;
 
             cursor = getContext().getContentResolver().query(

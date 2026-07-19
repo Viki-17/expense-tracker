@@ -1,14 +1,16 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { formatCurrency } from '../utils/formatters';
-import { TrashIcon, ListBulletIcon, ArrowUpIcon, ArrowDownIcon } from './Icons';
+import { TrashIcon, ListBulletIcon, ArrowUpIcon, ArrowDownIcon, CategoryIcon } from './Icons';
 import { TopBar } from './ui/TopBar';
 import { Card } from './ui/Card';
 import { VirtualList } from './ui/VirtualList';
 import { EmptyState } from './ui/EmptyState';
 import { Button } from './ui/Button';
+import { CategoryPicker } from './ui/CategoryPicker';
+import { TransactionDetailModal } from './TransactionDetailModal';
 import type { SortField, SortDirection, Transaction } from '../types';
 
 const FILTERS = ['all', 'expense', 'income'] as const;
@@ -22,8 +24,8 @@ type FlatRow =
   | { kind: 'row'; t: Transaction; key: string };
 
 export default function TransactionList() {
-  const { transactions, deleteTransaction } = useTransactions();
-  const { getCategory } = useCategories();
+  const { transactions, deleteTransaction, updateTransaction } = useTransactions();
+  const { getCategory, categories } = useCategories();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filterParam = searchParams.get('filter');
@@ -33,6 +35,13 @@ export default function TransactionList() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
   const [listHeight, setListHeight] = useState(480);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [categoryPicker, setCategoryPicker] = useState<{ anchorRect: DOMRect; transactionId: number } | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  useEffect(() => {
+    console.log('[TransactionList] selectedTransaction changed:', selectedTransaction?.id ?? null);
+  }, [selectedTransaction]);
 
   useEffect(() => {
     const update = () => setListHeight(Math.max(window.innerHeight - 260, 240));
@@ -88,6 +97,13 @@ export default function TransactionList() {
 
   const handleDelete = useCallback((id: number) => deleteTransaction(id), [deleteTransaction]);
 
+  const handleCategoryChange = useCallback((id: number, category: string) => {
+    updateTransaction(id, { category });
+    setCategoryPicker(null);
+  }, [updateTransaction]);
+
+  const itemKeyExtractor = useCallback((item: FlatRow) => item.key, []);
+
   const renderRow = useCallback(
     (item: FlatRow) => {
       if (item.kind === 'header') {
@@ -105,12 +121,41 @@ export default function TransactionList() {
       const cat = getCategory(t.category);
       const isExpense = t.type === 'expense';
       return (
-        <div className="group flex items-center gap-3 py-3 px-2 active:bg-surface-2/60 rounded-lg transition-colors" style={{ height: ROW_HEIGHT, boxSizing: 'border-box' }}>
+        <div
+          className="group flex items-center gap-3 py-3 px-2 active:bg-surface-2/60 rounded-lg transition-colors cursor-pointer"
+          style={{ height: ROW_HEIGHT, boxSizing: 'border-box' }}
+          onClick={() => {
+            console.log('[TransactionList] row clicked, transaction id:', t.id);
+            setSelectedTransaction(t);
+          }}
+          onPointerDown={(e) => {
+            pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+          }}
+          onPointerUp={(e) => {
+            const start = pointerStartRef.current;
+            if (!start) return;
+            const dx = e.clientX - start.x;
+            const dy = e.clientY - start.y;
+            const dt = Date.now() - start.time;
+            pointerStartRef.current = null;
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 500) {
+              console.log('[TransactionList] pointer tap, transaction id:', t.id);
+              setSelectedTransaction(t);
+            }
+          }}
+        >
           <div
-            className="w-11 h-11 rounded-full flex items-center justify-center font-semibold text-sm shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 cursor-pointer"
             style={{ backgroundColor: `${cat?.color || '#64748b'}26`, color: cat?.color || '#64748b' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setCategoryPicker({ anchorRect: rect, transactionId: t.id! });
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
           >
-            {cat ? cat.name.slice(0, 2).toUpperCase() : '#'}
+            <CategoryIcon name={cat?.name || t.category} className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-label truncate">{t.description || t.category}</p>
@@ -124,7 +169,9 @@ export default function TransactionList() {
               {isExpense ? '−' : '+'}{formatCurrency(t.amount)}
             </p>
             <button
-              onClick={() => handleDelete(t.id!)}
+              onClick={(e) => { e.stopPropagation(); handleDelete(t.id!); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
               aria-label="Delete"
               className="tap p-1.5 rounded-lg text-tertiary hover:text-danger active:scale-90"
             >
@@ -191,15 +238,31 @@ export default function TransactionList() {
           <p className="text-center text-tertiary text-sm py-8">No {filter} transactions found</p>
         ) : (
           <Card padded={false} className="px-2 flex-1 min-h-0">
-            <VirtualList
+              <VirtualList
               items={flatRows}
               rowHeight={ROW_HEIGHT}
               height={listHeight}
               renderRow={renderRow}
-              itemKey={(i) => i.key}
+              itemKey={itemKeyExtractor}
               overscan={8}
             />
           </Card>
+        )}
+
+        {selectedTransaction && (
+          <TransactionDetailModal
+            transaction={selectedTransaction}
+            onClose={() => setSelectedTransaction(null)}
+          />
+        )}
+
+        {categoryPicker && (
+          <CategoryPicker
+            categories={categories}
+            anchorRect={categoryPicker.anchorRect}
+            onSelect={(cat) => handleCategoryChange(categoryPicker.transactionId, cat)}
+            onClose={() => setCategoryPicker(null)}
+          />
         )}
       </div>
     </div>
