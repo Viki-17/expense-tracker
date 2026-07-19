@@ -129,6 +129,11 @@ export default function GroupDetail({ type }: GroupDetailProps) {
     [chartData]
   );
 
+  const totalExpense = useMemo(
+    () => txList.reduce((sum, t) => (t.type === 'expense' ? sum + t.amount : sum), 0),
+    [txList]
+  );
+
   const chartLoading = monthlyTotals === undefined;
 
   return (
@@ -204,13 +209,7 @@ export default function GroupDetail({ type }: GroupDetailProps) {
                       {txList.length} transaction{txList.length !== 1 ? 's' : ''}
                     </span>
                     <span className="text-sm font-bold text-label">
-                      {formatCurrency(
-                        txList.reduce(
-                          (sum, t) =>
-                            t.type === 'expense' ? sum + t.amount : sum,
-                          0
-                        )
-                      )}
+                      {formatCurrency(totalExpense)}
                     </span>
                   </div>
                    {txList.slice(0, MAX_ROWS).map((t) => (

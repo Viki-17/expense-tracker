@@ -1,25 +1,31 @@
+const inrFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+const dateShortFormatter = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' });
+const dateLongFormatter = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+const monthYearFormatter = new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric' });
+
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return inrFormatter.format(amount);
 }
 
 export function formatDate(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  return dateLongFormatter.format(date);
 }
 
 export function formatDateShort(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return dateShortFormatter.format(date);
 }
 
 export function formatMonth(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  return monthYearFormatter.format(date);
 }
 
 export function today(): string {

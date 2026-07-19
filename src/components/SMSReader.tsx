@@ -334,6 +334,14 @@ export default function SmartSMSReader() {
     });
   }, [results, groupMode]);
 
+  const resultIndexMap = useMemo(() => {
+    const map = new Map<SMSResult, number>();
+    for (let i = 0; i < results.length; i++) {
+      map.set(results[i], i);
+    }
+    return map;
+  }, [results]);
+
   const importedCount = importedIndices.size;
 
   return (
@@ -467,7 +475,7 @@ export default function SmartSMSReader() {
           </div>
 
           {groups.map((group) => {
-            const groupGlobalIndices = group.results.map((r) => results.indexOf(r));
+            const groupGlobalIndices = group.results.map((r) => resultIndexMap.get(r)!);
             const selectableInGroup = groupGlobalIndices.filter((i) => !importedIndices.has(i));
             const allGroupSelected = selectableInGroup.length > 0 && selectableInGroup.every((i) => selectedForImport.has(i));
             const someGroupSelected = selectableInGroup.some((i) => selectedForImport.has(i));
@@ -510,7 +518,7 @@ export default function SmartSMSReader() {
 
               <div className="space-y-2">
                 {group.results.map((result, i) => {
-                  const globalIndex = results.indexOf(result);
+                  const globalIndex = resultIndexMap.get(result)!;
                   const imported = importedIndices.has(globalIndex);
                   const preExisting = preExistingIndices.has(globalIndex);
                   const isSelected = selectedForImport.has(globalIndex);

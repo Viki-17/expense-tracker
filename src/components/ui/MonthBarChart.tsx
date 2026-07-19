@@ -56,7 +56,7 @@ function MonthBarChartBase({ data, selectedMonth, onSelect }: MonthBarChartProps
               <div className="flex items-end h-16 gap-[2px]">
                 <div
                   className={`w-5 rounded-t-md transition-all ${
-                    active ? 'bg-accent' : 'bg-[rgb(var(--surface-3))]'
+                    active ? 'bg-accent' : 'bg-tertiary'
                   }`}
                   style={{ height: `${pct}%` }}
                 />

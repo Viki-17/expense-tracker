@@ -23,6 +23,7 @@ import { ChevronDownIcon, CogIcon, PlusCircleIcon, WalletIcon, CategoryIcon } fr
 
 type TabKey = 'transactions' | 'categories' | 'merchants';
 const MAX_ROWS = 200;
+const TAB_ORDER: TabKey[] = ['transactions', 'categories', 'merchants'];
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -123,10 +124,13 @@ export default function Dashboard() {
     (id: number, category: string) => updateTransaction(id, { category }),
     [updateTransaction]
   );
-  const rows =
-    transactions.length > MAX_ROWS
-      ? transactions.slice(0, MAX_ROWS)
-      : transactions;
+  const rows = useMemo(
+    () => transactions.length > MAX_ROWS ? transactions.slice(0, MAX_ROWS) : transactions,
+    [transactions]
+  );
+
+  const goToAdd = useCallback(() => navigate('/add'), [navigate]);
+  const goToBudgets = useCallback(() => navigate('/budgets'), [navigate]);
 
   const tabs = useMemo(
     () => [
@@ -137,7 +141,6 @@ export default function Dashboard() {
     []
   );
 
-  const TAB_ORDER: TabKey[] = ['transactions', 'categories', 'merchants'];
   const currentIdx = TAB_ORDER.indexOf(tab);
 
   const handleSwipeLeft = useCallback(() => {
@@ -228,8 +231,8 @@ export default function Dashboard() {
                 allCategories={categories}
                 onDelete={handleDelete}
                 onUpdateCategory={handleUpdateCategory}
-                onAdd={() => navigate('/add')}
-                onBudget={() => navigate('/budgets')}
+                onAdd={goToAdd}
+                onBudget={goToBudgets}
               />
             )}
 
@@ -239,7 +242,7 @@ export default function Dashboard() {
                 totalExpense={stats.expense}
                 getCategory={getCategory}
                 categoryCounts={stats.countMap}
-                onCategoryBudget={() => navigate('/budgets')}
+                onCategoryBudget={goToBudgets}
                 empty={transactions.length === 0}
               />
             )}
@@ -247,7 +250,7 @@ export default function Dashboard() {
             {tab === 'merchants' && (
               <MerchantsTab
                 merchants={merchants}
-                onAdd={() => navigate('/add')}
+                onAdd={goToAdd}
               />
             )}
           </motion.div>

@@ -12,7 +12,6 @@ import { Button } from './ui/Button';
 import { CategoryPicker } from './ui/CategoryPicker';
 import { TransactionDetailModal } from './TransactionDetailModal';
 import type { SortField, SortDirection, Transaction } from '../types';
-
 const FILTERS = ['all', 'expense', 'income'] as const;
 type Filter = (typeof FILTERS)[number];
 
@@ -40,10 +39,6 @@ export default function TransactionList() {
   const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   useEffect(() => {
-    console.log('[TransactionList] selectedTransaction changed:', selectedTransaction?.id ?? null);
-  }, [selectedTransaction]);
-
-  useEffect(() => {
     const update = () => setListHeight(Math.max(window.innerHeight - 260, 240));
     update();
     window.addEventListener('resize', update);
@@ -69,14 +64,22 @@ export default function TransactionList() {
         return (a.amount - b.amount) * dir;
       });
 
+    const monthTotals = new Map<string, { total: number; count: number }>();
+    for (const t of sorted) {
+      const m = t.date.slice(0, 7);
+      const cur = monthTotals.get(m) || { total: 0, count: 0 };
+      cur.count++;
+      cur.total += t.type === 'expense' ? -t.amount : t.amount;
+      monthTotals.set(m, cur);
+    }
+
     const rows: FlatRow[] = [];
     let lastMonth = '';
     for (const t of sorted) {
       const m = t.date.slice(0, 7);
       if (m !== lastMonth) {
-        const items = sorted.filter((x) => x.date.slice(0, 7) === m);
-        const total = items.reduce((s, x) => s + (x.type === 'expense' ? -x.amount : x.amount), 0);
-        rows.push({ kind: 'header', month: m, total, count: items.length, key: `h-${m}` });
+        const monthData = monthTotals.get(m)!;
+        rows.push({ kind: 'header', month: m, total: monthData.total, count: monthData.count, key: `h-${m}` });
         lastMonth = m;
       }
       rows.push({ kind: 'row', t, key: `r-${t.id}` });
@@ -124,10 +127,7 @@ export default function TransactionList() {
         <div
           className="group flex items-center gap-3 py-3 px-2 active:bg-surface-2/60 rounded-lg transition-colors cursor-pointer"
           style={{ height: ROW_HEIGHT, boxSizing: 'border-box' }}
-          onClick={() => {
-            console.log('[TransactionList] row clicked, transaction id:', t.id);
-            setSelectedTransaction(t);
-          }}
+          onClick={() => setSelectedTransaction(t)}
           onPointerDown={(e) => {
             pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
           }}
@@ -139,7 +139,6 @@ export default function TransactionList() {
             const dt = Date.now() - start.time;
             pointerStartRef.current = null;
             if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 500) {
-              console.log('[TransactionList] pointer tap, transaction id:', t.id);
               setSelectedTransaction(t);
             }
           }}

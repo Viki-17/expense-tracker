@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useCategories } from '../hooks/useCategories';
 import { useTransactionStats } from '../hooks/useTransactions';
-import { startOfMonth, endOfMonth, formatCurrency, monthLabel } from '../utils/formatters';
+import { formatCurrency, monthLabel } from '../utils/formatters';
 import { TopBar } from '../components/ui/TopBar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';

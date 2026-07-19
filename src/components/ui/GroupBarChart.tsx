@@ -58,7 +58,7 @@ function GroupBarChartBase({ data, selectedMonth, onSelect }: GroupBarChartProps
                   className={`w-full rounded-t-md transition-all ${
                     active
                       ? 'bg-accent'
-                      : 'bg-surface-2'
+                      : 'bg-tertiary'
                   }`}
                   style={{ height: `${pct}%` }}
                 />
