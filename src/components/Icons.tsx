@@ -327,6 +327,7 @@ const ICONS_BY_CATEGORY: Record<string, React.FC<IconProps>> = {
   'Investment': TrendingUpIcon,
   'Salary': BanknotesIcon,
   'Freelance': BriefcaseIcon,
+  'Cash': WalletIcon,
   'Other': TagIcon,
 };
 

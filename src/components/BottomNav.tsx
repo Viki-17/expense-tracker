@@ -10,6 +10,10 @@ const navItems = [
 ];
 
 export default function BottomNav() {
+  const handleHomeClick = () => {
+    sessionStorage.removeItem('dashboardTab');
+  };
+
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 safe-bottom">
       <div className="mx-auto max-w-md px-3 pb-1 pt-2">
@@ -28,6 +32,7 @@ export default function BottomNav() {
               <NavLink
                 key={to}
                 to={to}
+                onClick={to === '/' ? handleHomeClick : undefined}
                 className={({ isActive }) =>
                   `flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg transition-colors tap ${
                     isActive ? 'text-accent' : 'text-tertiary'

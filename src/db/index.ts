@@ -213,5 +213,6 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { name: 'Investment', icon: 'investment', color: '#a855f7' },
   { name: 'Salary', icon: 'salary', color: '#22c55e' },
   { name: 'Freelance', icon: 'freelance', color: '#0ea5e9' },
+  { name: 'Cash', icon: 'cash', color: '#10b981' },
   { name: 'Other', icon: 'other', color: '#64748b' },
 ];
