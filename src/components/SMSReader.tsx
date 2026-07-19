@@ -85,7 +85,11 @@ export default function SmartSMSReader() {
   useEffect(() => {
     if (!isNative) return;
     SmsReader.checkPermission().then((res) => {
-      setPermissionGranted((prev) => prev || res.granted);
+      if (res.granted) {
+        setPermissionGranted(true);
+        SmsReader.startListening().catch(() => {});
+        window.dispatchEvent(new CustomEvent('smsPermissionGranted'));
+      }
     });
   }, [isNative]);
 
@@ -152,6 +156,8 @@ export default function SmartSMSReader() {
     setPermissionGranted(res.granted);
     if (res.granted) {
       setMessage('Permission granted! Tap "Scan SMS" to find transactions.');
+      SmsReader.startListening().catch(() => {});
+      window.dispatchEvent(new CustomEvent('smsPermissionGranted'));
     } else {
       setMessage('SMS permission denied. Please grant SMS permission in your device settings to scan transactions.');
     }

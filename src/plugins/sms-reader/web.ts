@@ -16,4 +16,12 @@ export class SmsReaderWeb extends WebPlugin implements SmsReaderPlugin {
     console.warn('SmsReader: Not available on web. Use the paste-based SMS import instead.');
     return { messages: [] };
   }
+
+  async startListening(): Promise<void> {
+    console.warn('SmsReader: SMS listening not available on web.');
+  }
+
+  async stopListening(): Promise<void> {
+    console.warn('SmsReader: SMS listening not available on web.');
+  }
 }

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import { useSmsListener } from './hooks/useSmsListener';
 
 const Home = lazy(() => import('./pages/Home'));
 const Transactions = lazy(() => import('./pages/Transactions'));
@@ -18,6 +19,8 @@ const PageLoader = () => (
 );
 
 export default function App() {
+  useSmsListener();
+
   return (
     <Layout>
       <Suspense fallback={<PageLoader />}>

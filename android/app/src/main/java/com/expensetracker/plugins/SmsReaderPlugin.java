@@ -1,10 +1,16 @@
 package com.expensetracker.plugins;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.telephony.SmsMessage;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSArray;
@@ -23,30 +29,38 @@ public class SmsReaderPlugin extends Plugin {
 
     private static final int SMS_PERMISSION_REQUEST = 1001;
     private PluginCall pendingPermissionCall;
+    private BroadcastReceiver smsReceiver;
+    private boolean isListening = false;
 
     @PluginMethod
     public void checkPermission(PluginCall call) {
+        JSObject ret = new JSObject();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int result = ContextCompat.checkSelfPermission(
+            int readResult = ContextCompat.checkSelfPermission(
                 getContext(), Manifest.permission.READ_SMS
             );
-            JSObject ret = new JSObject();
-            ret.put("granted", result == PackageManager.PERMISSION_GRANTED);
-            call.resolve(ret);
+            int receiveResult = ContextCompat.checkSelfPermission(
+                getContext(), Manifest.permission.RECEIVE_SMS
+            );
+            ret.put("granted", readResult == PackageManager.PERMISSION_GRANTED
+                && receiveResult == PackageManager.PERMISSION_GRANTED);
         } else {
-            JSObject ret = new JSObject();
             ret.put("granted", true);
-            call.resolve(ret);
         }
+        call.resolve(ret);
     }
 
     @PluginMethod
     public void requestPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int result = ContextCompat.checkSelfPermission(
+            int readResult = ContextCompat.checkSelfPermission(
                 getContext(), Manifest.permission.READ_SMS
             );
-            if (result == PackageManager.PERMISSION_GRANTED) {
+            int receiveResult = ContextCompat.checkSelfPermission(
+                getContext(), Manifest.permission.RECEIVE_SMS
+            );
+            if (readResult == PackageManager.PERMISSION_GRANTED
+                && receiveResult == PackageManager.PERMISSION_GRANTED) {
                 JSObject ret = new JSObject();
                 ret.put("granted", true);
                 call.resolve(ret);
@@ -54,7 +68,7 @@ public class SmsReaderPlugin extends Plugin {
                 pendingPermissionCall = call;
                 ActivityCompat.requestPermissions(
                     getActivity(),
-                    new String[]{Manifest.permission.READ_SMS},
+                    new String[]{Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS},
                     SMS_PERMISSION_REQUEST
                 );
             }
@@ -69,10 +83,15 @@ public class SmsReaderPlugin extends Plugin {
     protected void handleRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.handleRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == SMS_PERMISSION_REQUEST && pendingPermissionCall != null) {
+            boolean allGranted = grantResults.length > 0;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
             JSObject ret = new JSObject();
-            ret.put("granted",
-                grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            );
+            ret.put("granted", allGranted);
             pendingPermissionCall.resolve(ret);
             pendingPermissionCall = null;
         }
@@ -160,7 +179,6 @@ public class SmsReaderPlugin extends Plugin {
                 do {
                     String body = cursor.getString(cursor.getColumnIndexOrThrow("body"));
 
-                    // Quick filter: only include SMS that look like financial transactions
                     if (!isTransactionSms(body)) {
                         continue;
                     }
@@ -187,6 +205,94 @@ public class SmsReaderPlugin extends Plugin {
         call.resolve(ret);
     }
 
+    @PluginMethod
+    public void startListening(PluginCall call) {
+        if (isListening) {
+            call.resolve();
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int result = ContextCompat.checkSelfPermission(
+                getContext(), Manifest.permission.RECEIVE_SMS
+            );
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                call.reject("RECEIVE_SMS permission not granted");
+                return;
+            }
+        }
+
+        smsReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (!"android.provider.Telephony.SMS_RECEIVED".equals(intent.getAction())) {
+                    return;
+                }
+                Bundle bundle = intent.getExtras();
+                if (bundle == null) return;
+
+                Object[] pdus = (Object[]) bundle.get("pdus");
+                if (pdus == null) return;
+
+                for (Object pdu : pdus) {
+                    SmsMessage message;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        message = SmsMessage.createFromPdu((byte[]) pdu, bundle.getString("format"));
+                    } else {
+                        message = SmsMessage.createFromPdu((byte[]) pdu);
+                    }
+                    String body = message.getMessageBody();
+                    String address = message.getOriginatingAddress();
+                    long date = message.getTimestampMillis();
+
+                    if (isTransactionSms(body)) {
+                        JSObject msg = new JSObject();
+                        msg.put("id", String.valueOf(System.currentTimeMillis()));
+                        msg.put("address", address != null ? address : "");
+                        msg.put("body", body != null ? body : "");
+                        msg.put("date", date);
+                        msg.put("read", false);
+                        notifyListeners("smsReceived", msg);
+                    }
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter("android.provider.Telephony.SMS_RECEIVED");
+        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+        getContext().registerReceiver(smsReceiver, filter);
+        isListening = true;
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void stopListening(PluginCall call) {
+        if (smsReceiver != null && isListening) {
+            try {
+                getContext().unregisterReceiver(smsReceiver);
+            } catch (Exception e) {
+                // Receiver was not registered or already unregistered
+            }
+            smsReceiver = null;
+            isListening = false;
+        }
+        call.resolve();
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        if (smsReceiver != null && isListening) {
+            try {
+                getContext().unregisterReceiver(smsReceiver);
+            } catch (Exception e) {
+                // Ignore
+            }
+            smsReceiver = null;
+            isListening = false;
+        }
+        super.handleOnDestroy();
+    }
+
     /**
      * Quick pre-filter: checks if an SMS looks like a financial transaction.
      * This avoids sending every SMS to JavaScript for parsing.
@@ -195,7 +301,6 @@ public class SmsReaderPlugin extends Plugin {
         if (body == null || body.isEmpty()) return false;
         String lower = body.toLowerCase();
 
-        // Keywords that strongly indicate a transaction SMS
         String[] keywords = {
             "debited", "credited", "spent", "paid", "payment",
             "withdrawn", "deposited", "purchased", "rs.", "inr",
