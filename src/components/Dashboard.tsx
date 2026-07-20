@@ -1,11 +1,17 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
 import { useSwipe } from '../hooks/useSwipe';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { db } from '../db';
 import { formatCurrency, monthLabel } from '../utils/formatters';
+import { parseMultipleSMS } from '../utils/smsParser';
+import { getAutoImportMerchants, addAutoImportMerchant } from '../utils/autoImport';
+import { isNativePlatform } from '../utils/platform';
+import SmsReader from '../plugins/sms-reader';
 import { TopBar } from './ui/TopBar';
 import { Tabs } from './ui/Tabs';
 import { SpendRing } from './ui/SpendRing';
@@ -82,7 +88,7 @@ export default function Dashboard() {
         expense += t.amount;
         breakdown.set(t.category, (breakdown.get(t.category) || 0) + t.amount);
         countMap.set(t.category, (countMap.get(t.category) || 0) + 1);
-      } else {
+      } else if (t.type === 'income') {
         income += t.amount;
       }
     }
@@ -159,8 +165,103 @@ export default function Dashboard() {
 
   const selectedMonthLabel = useMemo(() => monthLabel(cursor), [cursor]);
 
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const scanForNewSMS = useCallback(async () => {
+    if (!isNativePlatform()) {
+      setToast('SMS scanning is only available on Android');
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    try {
+      const perm = await SmsReader.checkPermission();
+      if (!perm.granted) {
+        setToast('SMS permission not granted. Grant it in Settings → SMS Import.');
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+    } catch {
+      setToast('Could not check SMS permission');
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    const autoMerchants = getAutoImportMerchants().map((m) => m.toLowerCase());
+    try {
+      const [smsRes, existingRes] = await Promise.all([
+        SmsReader.getMessages({ maxCount: 500 }),
+        db.transactions.where('source').equals('sms').toArray(),
+      ]);
+      const existingTexts = new Set(existingRes.map((t) => t.smsText).filter(Boolean) as string[]);
+      const bodies = smsRes.messages.map((m) => m.body);
+      const parsed = parseMultipleSMS(bodies);
+
+      let autoImported = 0;
+      let newFound = 0;
+
+      for (const result of parsed) {
+        if (existingTexts.has(result.raw)) continue;
+
+        const merchantMatch = result.merchant && autoMerchants.includes(result.merchant.toLowerCase());
+        if (merchantMatch) {
+          const sameDay = await db.transactions
+            .where('[type+date]')
+            .equals([result.type, result.date])
+            .toArray();
+          if (!sameDay.find((t) => t.amount === result.amount)) {
+            await db.transactions.add({
+              amount: result.amount,
+              type: result.type,
+              category: result.category,
+              description: result.description,
+              merchant: result.merchant,
+              date: result.date,
+              source: 'sms',
+              smsText: result.raw,
+              createdAt: new Date().toISOString(),
+            });
+            addAutoImportMerchant(result.merchant);
+          }
+          autoImported++;
+        } else {
+          newFound++;
+        }
+      }
+
+      const parts: string[] = [];
+      if (autoImported > 0) parts.push(`${autoImported} auto-imported`);
+      if (newFound > 0) parts.push(`${newFound} new`);
+      setToast(
+        parts.length > 0
+          ? `${parts.join(', ')} transaction${autoImported + newFound > 1 ? 's' : ''} found.`
+          : 'No new transactions found.'
+      );
+    } catch (e: any) {
+      setToast(`Scan failed: ${e.message || 'Unknown error'}`);
+    }
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const { pullDistance, refreshing, setRefreshing } = usePullToRefresh(dashboardRef, {
+    onRefresh: scanForNewSMS,
+    threshold: 50,
+  });
+
+  useEffect(() => {
+    if (refreshing && toast !== null) {
+      setRefreshing(false);
+    }
+  }, [refreshing, toast, setRefreshing]);
+
   return (
-    <div>
+    <div
+      ref={(el) => {
+        (dashboardRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+        (swipeRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      }}
+      style={{ touchAction: 'pan-y' }}
+    >
       <TopBar
         title="All transactions"
         subtitle={
@@ -185,7 +286,7 @@ export default function Dashboard() {
         }
       />
 
-      <div ref={swipeRef} className="px-3 w-full lg:max-w-2xl lg:mx-auto" style={{ touchAction: 'pan-y' }}>
+      <div className="px-3 w-full lg:max-w-2xl lg:mx-auto">
         <AnimatePresence initial={false}>
           {chartOpen && (
             <motion.div
@@ -212,6 +313,18 @@ export default function Dashboard() {
           <Tabs tabs={tabs} value={tab} onChange={setTab} />
         </div>
 
+        {pullDistance > 0 && (
+          <div className="flex items-center justify-center py-2 -mt-1 mb-1">
+            <div
+              className="w-5 h-5 rounded-full border-2 border-accent border-t-transparent animate-spin"
+              style={{ opacity: Math.min(pullDistance / 50, 1) }}
+            />
+            <span className="ml-2 text-xs text-tertiary">
+              {pullDistance >= 50 ? 'Release to scan for new transactions' : 'Pull to scan SMS'}
+            </span>
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
@@ -231,6 +344,7 @@ export default function Dashboard() {
                 allCategories={categories}
                 onDelete={handleDelete}
                 onUpdateCategory={handleUpdateCategory}
+                onUpdateTransaction={updateTransaction}
                 onAdd={goToAdd}
                 onBudget={goToBudgets}
               />
@@ -256,6 +370,14 @@ export default function Dashboard() {
           </motion.div>
         </AnimatePresence>
       </div>
+      {toast && createPortal(
+        <div className="fixed bottom-24 left-0 right-0 z-50 flex justify-center pointer-events-none">
+          <div className="bg-label text-canvas text-sm font-medium px-5 py-3 rounded-2xl shadow-lg max-w-sm mx-4 pointer-events-auto">
+            {toast}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -271,6 +393,7 @@ interface TransactionsTabProps {
   allCategories: import('../types').Category[];
   onDelete: (id: number) => void;
   onUpdateCategory: (id: number, category: string) => void;
+  onUpdateTransaction: (id: number, updates: Partial<import('../types').Transaction>) => void;
   onAdd: () => void;
   onBudget: () => void;
 }
@@ -285,6 +408,7 @@ function TransactionsTab({
   allCategories,
   onDelete,
   onUpdateCategory,
+  onUpdateTransaction,
   onAdd,
   onBudget,
 }: TransactionsTabProps) {
@@ -401,6 +525,7 @@ function TransactionsTab({
         <TransactionDetailModal
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
+          onUpdate={onUpdateTransaction}
         />
       )}
     </div>

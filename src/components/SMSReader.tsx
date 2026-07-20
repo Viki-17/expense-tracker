@@ -60,6 +60,7 @@ export default function SmartSMSReader() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [groupMode, setGroupMode] = useState<GroupMode>('week');
   const [selectedSMS, setSelectedSMS] = useState<SMSResult | null>(null);
+  const [selectedSMSIndex, setSelectedSMSIndex] = useState<number | null>(null);
   const [startDate, setStartDate] = useState(() => daysAgo(730));
   const [endDate, setEndDate] = useState(() => today());
   const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheck | null>(null);
@@ -302,6 +303,21 @@ export default function SmartSMSReader() {
     }
   }, [isNative, permissionGranted]);
 
+  const handleUpdateSMSResultType = useCallback((newType: 'expense' | 'income' | 'neutral') => {
+    if (selectedSMSIndex === null) return;
+    setResults((prev) => {
+      const next = [...prev];
+      next[selectedSMSIndex] = { ...next[selectedSMSIndex], type: newType };
+      return next;
+    });
+    setSelectedSMS((prev) => prev ? { ...prev, type: newType } : null);
+  }, [selectedSMSIndex]);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedSMS(null);
+    setSelectedSMSIndex(null);
+  }, []);
+
   const { pullDistance, refreshing, setRefreshing } = usePullToRefresh(smsRef, {
     onRefresh: scanDeviceSms,
   });
@@ -328,7 +344,7 @@ export default function SmartSMSReader() {
       let totalIncome = 0;
       for (const r of items) {
         if (r.type === 'expense') totalExpense += r.amount;
-        else totalIncome += r.amount;
+        else if (r.type === 'income') totalIncome += r.amount;
       }
       return { label, dateRange: key, results: items, totalExpense, totalIncome };
     });
@@ -539,6 +555,7 @@ export default function SmartSMSReader() {
                       toggleSelect(globalIndex);
                     } else {
                       setSelectedSMS(result);
+                      setSelectedSMSIndex(globalIndex);
                     }
                   };
 
@@ -571,9 +588,9 @@ export default function SmartSMSReader() {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                               <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                                result.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
+                                result.type === 'expense' ? 'bg-danger-soft text-danger' : result.type === 'income' ? 'bg-success-soft text-success' : 'bg-surface-2 text-secondary'
                               }`}>
-                                {result.type === 'expense' ? 'EXPENSE' : 'INCOME'}
+                                {result.type === 'expense' ? 'EXPENSE' : result.type === 'income' ? 'INCOME' : 'NEUTRAL'}
                               </span>
                               <span className="text-[10px] bg-surface-2 text-secondary px-1.5 py-0.5 rounded-full">
                                 {result.category}
@@ -590,8 +607,10 @@ export default function SmartSMSReader() {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={`text-base font-bold ${result.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
-                            {result.type === 'expense' ? '-' : '+'}{formatCurrency(result.amount)}
+                          <p className={`text-base font-bold ${
+                            result.type === 'expense' ? 'text-expense-500' : result.type === 'income' ? 'text-income-500' : 'text-tertiary'
+                          }`}>
+                            {result.type === 'expense' ? '-' : result.type === 'income' ? '+' : '±'}{formatCurrency(result.amount)}
                           </p>
                           {!selectionMode && (
                             <button
@@ -641,7 +660,7 @@ export default function SmartSMSReader() {
       {selectedSMS && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-          onClick={() => setSelectedSMS(null)}
+                onClick={handleCloseModal}
         >
           <div
             className="bg-surface rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl"
@@ -650,7 +669,7 @@ export default function SmartSMSReader() {
             <div className="sticky top-0 bg-surface border-b border-separator/40 px-5 py-4 flex items-center justify-between rounded-t-2xl">
               <h3 className="text-sm font-semibold text-label">SMS Details</h3>
               <button
-                onClick={() => setSelectedSMS(null)}
+          onClick={handleCloseModal}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-2 text-secondary hover:bg-surface-3 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -663,33 +682,62 @@ export default function SmartSMSReader() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Amount</p>
-                  <p className={`text-lg font-bold ${selectedSMS.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
-                    {selectedSMS.type === 'expense' ? '-' : '+'}{formatCurrency(selectedSMS.amount)}
+                  <p className={`text-lg font-bold ${
+                    selectedSMS.type === 'expense' ? 'text-expense-500' : selectedSMS.type === 'income' ? 'text-income-500' : 'text-tertiary'
+                  }`}>
+                    {selectedSMS.type === 'expense' ? '-' : selectedSMS.type === 'income' ? '+' : '±'}{formatCurrency(selectedSMS.amount)}
                   </p>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Date</p>
                   <p className="text-sm font-semibold text-label">{formatDate(selectedSMS.date)}</p>
                 </div>
-                <div className="bg-surface-2 rounded-xl p-3">
-                  <p className="text-[10px] text-tertiary uppercase font-medium">Type</p>
-                  <span className={`inline-block mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full ${
-                    selectedSMS.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
-                  }`}>
-                    {selectedSMS.type.toUpperCase()}
-                  </span>
+                <div className="bg-surface-2 rounded-xl p-3 col-span-2">
+                  <p className="text-[10px] text-tertiary uppercase font-medium mb-2">Type</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleUpdateSMSResultType('expense')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        selectedSMS.type === 'expense'
+                          ? 'bg-danger text-white shadow-sm'
+                          : 'bg-surface-3 text-secondary hover:bg-danger-soft/50'
+                      }`}
+                    >
+                      Expense
+                    </button>
+                    <button
+                      onClick={() => handleUpdateSMSResultType('income')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        selectedSMS.type === 'income'
+                          ? 'bg-success text-white shadow-sm'
+                          : 'bg-surface-3 text-secondary hover:bg-success-soft/50'
+                      }`}
+                    >
+                      Income
+                    </button>
+                    <button
+                      onClick={() => handleUpdateSMSResultType('neutral')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                        selectedSMS.type === 'neutral'
+                          ? 'bg-surface-3 text-label shadow-sm'
+                          : 'bg-surface-3 text-secondary opacity-50 hover:opacity-100'
+                      }`}
+                    >
+                      Neutral
+                    </button>
+                  </div>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Category</p>
                   <p className="text-sm font-semibold text-label">{selectedSMS.category}</p>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
-                  <p className="text-[10px] text-tertiary uppercase font-medium">Merchant</p>
-                  <p className="text-sm font-semibold text-label">{selectedSMS.merchant || 'N/A'}</p>
-                </div>
-                <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Confidence</p>
                   <p className="text-sm font-semibold text-label">{Math.round(selectedSMS.confidence)}%</p>
+                </div>
+                <div className="bg-surface-2 rounded-xl p-3 col-span-2">
+                  <p className="text-[10px] text-tertiary uppercase font-medium">Merchant</p>
+                  <p className="text-sm font-semibold text-label">{selectedSMS.merchant || 'N/A'}</p>
                 </div>
               </div>
 
@@ -740,15 +788,17 @@ export default function SmartSMSReader() {
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                    duplicateCheck.existing.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
+                    duplicateCheck.existing.type === 'expense' ? 'bg-danger-soft text-danger' : duplicateCheck.existing.type === 'income' ? 'bg-success-soft text-success' : 'bg-surface-2 text-secondary'
                   }`}>
                     {duplicateCheck.existing.type.toUpperCase()}
                   </span>
                   <span className="text-xs text-secondary">
                     {formatDate(duplicateCheck.existing.date)}
                   </span>
-                  <span className={`text-xs font-bold ${duplicateCheck.existing.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
-                    {duplicateCheck.existing.type === 'expense' ? '-' : '+'}{formatCurrency(duplicateCheck.existing.amount)}
+                  <span className={`text-xs font-bold ${
+                    duplicateCheck.existing.type === 'expense' ? 'text-expense-500' : duplicateCheck.existing.type === 'income' ? 'text-income-500' : 'text-tertiary'
+                  }`}>
+                    {duplicateCheck.existing.type === 'expense' ? '-' : duplicateCheck.existing.type === 'income' ? '+' : '±'}{formatCurrency(duplicateCheck.existing.amount)}
                   </span>
                 </div>
               </div>
@@ -760,15 +810,17 @@ export default function SmartSMSReader() {
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                    duplicateCheck.result.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
+                    duplicateCheck.result.type === 'expense' ? 'bg-danger-soft text-danger' : duplicateCheck.result.type === 'income' ? 'bg-success-soft text-success' : 'bg-surface-2 text-secondary'
                   }`}>
                     {duplicateCheck.result.type.toUpperCase()}
                   </span>
                   <span className="text-xs text-secondary">
                     {formatDate(duplicateCheck.result.date)}
                   </span>
-                  <span className={`text-xs font-bold ${duplicateCheck.result.type === 'expense' ? 'text-expense-500' : 'text-income-500'}`}>
-                    {duplicateCheck.result.type === 'expense' ? '-' : '+'}{formatCurrency(duplicateCheck.result.amount)}
+                  <span className={`text-xs font-bold ${
+                    duplicateCheck.result.type === 'expense' ? 'text-expense-500' : duplicateCheck.result.type === 'income' ? 'text-income-500' : 'text-tertiary'
+                  }`}>
+                    {duplicateCheck.result.type === 'expense' ? '-' : duplicateCheck.result.type === 'income' ? '+' : '±'}{formatCurrency(duplicateCheck.result.amount)}
                   </span>
                 </div>
               </div>

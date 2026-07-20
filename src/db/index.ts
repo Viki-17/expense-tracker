@@ -72,7 +72,7 @@ export class ExpenseDB extends Dexie {
       const m = t.date.slice(0, 7);
       const cur = map.get(m) || { expense: 0, income: 0 };
       if (t.type === 'expense') cur.expense += t.amount;
-      else cur.income += t.amount;
+      else if (t.type === 'income') cur.income += t.amount;
       map.set(m, cur);
     }
     const result: { month: string; expense: number; income: number }[] = [];
@@ -96,7 +96,7 @@ export class ExpenseDB extends Dexie {
     for (const t of transactions) {
       if (map[t.date]) {
         if (t.type === 'expense') map[t.date].expense += t.amount;
-        else map[t.date].income += t.amount;
+        else if (t.type === 'income') map[t.date].income += t.amount;
       }
     }
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));

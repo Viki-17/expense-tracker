@@ -12,7 +12,7 @@ import { Button } from './ui/Button';
 import { CategoryPicker } from './ui/CategoryPicker';
 import { TransactionDetailModal } from './TransactionDetailModal';
 import type { SortField, SortDirection, Transaction } from '../types';
-const FILTERS = ['all', 'expense', 'income'] as const;
+const FILTERS = ['all', 'expense', 'income', 'neutral'] as const;
 type Filter = (typeof FILTERS)[number];
 
 const HEADER_HEIGHT = 44;
@@ -29,7 +29,7 @@ export default function TransactionList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filterParam = searchParams.get('filter');
   const [filter, setFilter] = useState<Filter>(
-    filterParam === 'expense' || filterParam === 'income' ? filterParam : 'all'
+    filterParam === 'expense' || filterParam === 'income' || filterParam === 'neutral' ? filterParam : 'all'
   );
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
@@ -46,7 +46,7 @@ export default function TransactionList() {
   }, []);
 
   useEffect(() => {
-    if (filterParam === 'expense' || filterParam === 'income') setFilter(filterParam);
+    if (filterParam === 'expense' || filterParam === 'income' || filterParam === 'neutral') setFilter(filterParam);
     else if (!filterParam) setFilter('all');
   }, [filterParam]);
 
@@ -69,7 +69,7 @@ export default function TransactionList() {
       const m = t.date.slice(0, 7);
       const cur = monthTotals.get(m) || { total: 0, count: 0 };
       cur.count++;
-      cur.total += t.type === 'expense' ? -t.amount : t.amount;
+      cur.total += t.type === 'expense' ? -t.amount : t.type === 'income' ? t.amount : 0;
       monthTotals.set(m, cur);
     }
 
@@ -123,6 +123,7 @@ export default function TransactionList() {
       const t = item.t;
       const cat = getCategory(t.category);
       const isExpense = t.type === 'expense';
+      const isIncome = t.type === 'income';
       return (
         <div
           className="group flex items-center gap-3 py-3 px-2 active:bg-surface-2/60 rounded-lg transition-colors cursor-pointer"
@@ -164,8 +165,10 @@ export default function TransactionList() {
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <p className={`text-sm font-bold ${isExpense ? 'text-danger' : 'text-success'}`}>
-              {isExpense ? '−' : '+'}{formatCurrency(t.amount)}
+            <p className={`text-sm font-bold ${
+              isExpense ? 'text-danger' : isIncome ? 'text-success' : 'text-tertiary'
+            }`}>
+              {isExpense ? '−' : isIncome ? '+' : '±'}{formatCurrency(t.amount)}
             </p>
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(t.id!); }}
@@ -252,6 +255,7 @@ export default function TransactionList() {
           <TransactionDetailModal
             transaction={selectedTransaction}
             onClose={() => setSelectedTransaction(null)}
+            onUpdate={updateTransaction}
           />
         )}
 

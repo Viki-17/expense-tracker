@@ -21,16 +21,18 @@ export default function AddTransaction() {
     await db.transactions.add({ ...t, createdAt: new Date().toISOString() });
   }, []);
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [type, setType] = useState<'expense' | 'income' | 'neutral'>('expense');
   const [category, setCategory] = useState('Other');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(today());
 
   const filteredCategories = useMemo(
     () =>
-      categories.filter((c) =>
-        type === 'income' ? INCOME_CATEGORIES.includes(c.name) : !EXCLUDED_FROM_EXPENSE.has(c.name)
-      ),
+      type === 'neutral'
+        ? categories
+        : categories.filter((c) =>
+            type === 'income' ? INCOME_CATEGORIES.includes(c.name) : !EXCLUDED_FROM_EXPENSE.has(c.name)
+          ),
     [categories, type]
   );
 
@@ -64,7 +66,7 @@ export default function AddTransaction() {
       />
 
       <form onSubmit={handleSubmit} className="px-4 max-w-xl mx-auto w-full pt-4 space-y-5" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <button
             type="button"
             onClick={() => setType('expense')}
@@ -82,6 +84,15 @@ export default function AddTransaction() {
             }`}
           >
             Income
+          </button>
+          <button
+            type="button"
+            onClick={() => setType('neutral')}
+            className={`tap py-2.5 rounded-2xl text-sm font-semibold transition-all ${
+              type === 'neutral' ? 'bg-surface-3 text-label shadow-card' : 'bg-surface-2 text-secondary'
+            }`}
+          >
+            Neutral
           </button>
         </div>
 
@@ -144,7 +155,7 @@ export default function AddTransaction() {
 
         <div className="max-w-xl mx-auto w-full">
           <Button type="submit" full size="lg">
-            Add {type === 'expense' ? 'expense' : 'income'}
+            Add {type === 'expense' ? 'expense' : type === 'income' ? 'income' : 'neutral'}
           </Button>
         </div>
       </form>

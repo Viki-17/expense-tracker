@@ -19,17 +19,19 @@ const EXCLUDED_FROM_EXPENSE = new Set(['Salary', 'Freelance', 'Investment']);
 export default function TransactionForm({ onSubmit, initial, compact }: Props) {
   const { categories } = useCategories();
   const [amount, setAmount] = useState(initial?.amount?.toString() || '');
-  const [type, setType] = useState<'expense' | 'income'>(initial?.type || 'expense');
+  const [type, setType] = useState<'expense' | 'income' | 'neutral'>(initial?.type || 'expense');
   const [category, setCategory] = useState(initial?.category || 'Other');
   const [description, setDescription] = useState(initial?.description || '');
   const [date, setDate] = useState(initial?.date || today());
 
   const filteredCategories = useMemo(() =>
-    categories.filter((c) =>
-      type === 'income'
-        ? INCOME_CATEGORIES.includes(c.name)
-        : !EXCLUDED_FROM_EXPENSE.has(c.name)
-    ),
+    type === 'neutral'
+      ? categories
+      : categories.filter((c) =>
+          type === 'income'
+            ? INCOME_CATEGORIES.includes(c.name)
+            : !EXCLUDED_FROM_EXPENSE.has(c.name)
+        ),
     [categories, type]
   );
 
@@ -74,6 +76,17 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
           >
             Income
           </button>
+          <button
+            type="button"
+            onClick={() => setType('neutral')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              type === 'neutral'
+                ? 'bg-gray-500 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            Neutral
+          </button>
         </div>
         <div>
           <label className={LABEL_CLASS}>Amount (₹)</label>
@@ -100,7 +113,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
           </div>
         </div>
         <button type="submit" className="w-full py-3 bg-primary-500 text-white rounded-xl font-medium text-sm hover:bg-primary-600 transition-colors">
-          Add {type === 'expense' ? 'Expense' : 'Income'}
+          Add {type === 'expense' ? 'Expense' : type === 'income' ? 'Income' : 'Neutral'}
         </button>
       </form>
     );
@@ -130,6 +143,17 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
           }`}
         >
           💰 Income
+        </button>
+        <button
+          type="button"
+          onClick={() => setType('neutral')}
+          className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+            type === 'neutral'
+              ? 'bg-gray-500 text-white shadow-lg shadow-gray-500/25'
+              : 'bg-white border border-gray-200 text-gray-600'
+          }`}
+        >
+          ⚪ Neutral
         </button>
       </div>
 
@@ -186,10 +210,12 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
         className={`w-full py-3.5 rounded-xl font-semibold text-white text-sm transition-all ${
           type === 'expense'
             ? 'bg-expense-500 hover:bg-expense-600 shadow-lg shadow-expense-500/25'
-            : 'bg-income-500 hover:bg-income-600 shadow-lg shadow-income-500/25'
+            : type === 'income'
+            ? 'bg-income-500 hover:bg-income-600 shadow-lg shadow-income-500/25'
+            : 'bg-gray-500 hover:bg-gray-600 shadow-lg shadow-gray-500/25'
         }`}
       >
-        Add {type === 'expense' ? 'Expense' : 'Income'}
+        Add {type === 'expense' ? 'Expense' : type === 'income' ? 'Income' : 'Neutral'}
       </button>
     </form>
   );

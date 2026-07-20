@@ -18,6 +18,7 @@ interface RowProps {
 
 function TransactionRowBase({ t, category, onDelete, showCategoryTag = true, onClick, onCategoryChange, allCategories }: RowProps) {
   const isExpense = t.type === 'expense';
+  const isIncome = t.type === 'income';
   const [pickerOpen, setPickerOpen] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
 
@@ -38,8 +39,8 @@ function TransactionRowBase({ t, category, onDelete, showCategoryTag = true, onC
         {category ? (
           <Avatar size="md" color={categoryColor(category)} icon={<CategoryIcon name={category.name} />} />
         ) : (
-          <Avatar size="md" color={categoryColor(undefined, t.type === 'expense' ? '#ef4444' : '#22c55e')}>
-            {isExpense ? '↓' : '↑'}
+          <Avatar size="md" color={categoryColor(undefined, t.type === 'expense' ? '#ef4444' : t.type === 'income' ? '#22c55e' : '#64748b')}>
+            {isExpense ? '↓' : isIncome ? '↑' : '○'}
           </Avatar>
         )}
       </div>
@@ -57,8 +58,10 @@ function TransactionRowBase({ t, category, onDelete, showCategoryTag = true, onC
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <div className="text-right">
-          <p className={`text-sm font-bold ${isExpense ? 'text-danger' : 'text-success'}`}>
-            {isExpense ? '−' : '+'}{formatCurrency(t.amount)}
+          <p className={`text-sm font-bold ${
+            isExpense ? 'text-danger' : isIncome ? 'text-success' : 'text-tertiary'
+          }`}>
+            {isExpense ? '−' : isIncome ? '+' : '±'}{formatCurrency(t.amount)}
           </p>
         </div>
         {onDelete && t.id != null && (

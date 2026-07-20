@@ -31,6 +31,10 @@ export default function GroupDetail({ type }: GroupDetailProps) {
 
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
+  const updateTransaction = useCallback(async (id: number, updates: Partial<Transaction>) => {
+    await db.transactions.update(id, updates);
+  }, []);
+
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -239,6 +243,7 @@ export default function GroupDetail({ type }: GroupDetailProps) {
         <TransactionDetailModal
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
+          onUpdate={updateTransaction}
         />
       )}
     </div>

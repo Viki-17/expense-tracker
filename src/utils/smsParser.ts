@@ -12,7 +12,7 @@ interface SMSRule {
   name: string;
   patterns: RegExp[];
   category: string;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'neutral';
 }
 
 const BANK_RULES: SMSRule[] = [
@@ -203,26 +203,33 @@ export function parseSMS(message: string): SMSResult | null {
   }
 
   let amount: number | null = null;
-  let type: 'expense' | 'income' = 'expense';
+  let type: 'expense' | 'income' | 'neutral' = 'expense';
   let category = 'Other';
   let merchant = '';
   let confidence = 0;
 
   // Extract amount - look for common Indian bank SMS amount patterns
+  // Strip available balance/limit text to avoid picking up non-transaction amounts
+  const cleanedForAmount = cleaned
+    .replace(/(?:Avl|Available)\s+(?:Balance|Limit|Bal)(?:\s*is)?\s*:?\s*(?:Rs\.?|INR|USD)?\s*[\d,]+\.?\d*.*$/i, '')
+    .trim();
   const amountPatterns = [
     /(?:contribution|deposit|premium|installment)\s+(?:of|for)?\s*(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
     /(?:Rs\.?|INR)\s*([\d,]+\.?\d*)/i,
     /([\d,]+\.?\d*)\s*(?:Rs\.?|INR)/i,
     /(?:amount\s*(?:of\s*)?|amt\.?\s*)(?:Rs\.?|INR)?\s*([\d,]+\.?\d*)/i,
+    /(?:USD|USD\.?)\s*([\d,]+\.?\d*)/i,
     /([\d,]+\.\d{2})\b/,
   ];
 
+  let amountFrom = cleanedForAmount;
+
   for (const pattern of amountPatterns) {
-    const match = cleaned.match(pattern);
+    const match = amountFrom.match(pattern);
     if (match) {
       const amt = parseFloat(match[1].replace(/,/g, ''));
       if (amt > 0) {
-        const afterMatch = cleaned.substring(match.index! + match[0].length);
+        const afterMatch = amountFrom.substring(match.index! + match[0].length);
         if (/^\s*[-/\.]\s*\d{2,4}\b/.test(afterMatch)) {
           continue;
         }
@@ -234,37 +241,64 @@ export function parseSMS(message: string): SMSResult | null {
 
   if (!amount || amount <= 0) return null;
 
-  // Determine if debit or credit
-  // Check debit keywords first — many Indian SMS mention beneficiary "credited" in debit context
+  // Check for declined/failed/cancelled transactions before debit/credit detection
+  const isNeutral = /(?:declined|not\s+(?:processed|completed|successful)|rejected|cancell?ed|unsuccessful|failed|not\s+honou?red|transaction\s+(?:could|was)\s+not|per\s+txn\s+limit)/i.test(cleaned);
+
+  // Determine if debit or credit — detect early so categorization doesn't override
   const isDebit = /(?:debit(?:\b|ed|s?\s)|spent|paid|withdrawn|deducted|purchase|nach)/i.test(cleaned);
   const isCredit = /(?:credited|received|added|deposited|salary|stipend|refund|cashback)/i.test(cleaned);
+  let typeExplicit = false;
 
-  if (isDebit && !isCredit) {
-    type = 'expense';
-    confidence += 20;
-  } else if (isCredit && !isDebit) {
-    type = 'income';
-    confidence += 20;
-  } else if (isDebit) {
-    // Both debit and credit keywords found → prefer debit (beneficiary "credited" is not user income)
-    type = 'expense';
-    confidence += 20;
-  } else if (isCredit) {
-    type = 'income';
-    confidence += 20;
+  if (isNeutral) {
+    type = 'neutral';
+    typeExplicit = true;
+    confidence += 15;
+    // Still categorize and extract merchant for visibility
+    for (const rule of BANK_RULES) {
+      for (const pattern of rule.patterns) {
+        if (pattern.test(cleaned)) {
+          category = rule.category;
+          confidence += 25;
+          break;
+        }
+      }
+      if (confidence >= 40) break;
+    }
+  } else {
+    // Check debit keywords first — many Indian SMS mention beneficiary "credited" in debit context
+    if (isDebit && !isCredit) {
+      type = 'expense';
+      typeExplicit = true;
+      confidence += 20;
+    } else if (isCredit && !isDebit) {
+      type = 'income';
+      typeExplicit = true;
+      confidence += 20;
+    } else if (isDebit) {
+      // Both debit and credit keywords found → prefer debit (beneficiary "credited" is not user income)
+      type = 'expense';
+      typeExplicit = true;
+      confidence += 20;
+    } else if (isCredit) {
+      type = 'income';
+      typeExplicit = true;
+      confidence += 20;
+    }
   }
 
-  // Categorize using rules
-  for (const rule of BANK_RULES) {
-    for (const pattern of rule.patterns) {
-      if (pattern.test(cleaned)) {
-        if (rule.type !== undefined) type = rule.type;
-        category = rule.category;
-        confidence += 25;
-        break;
+  // Categorize using rules (skip for neutral — already categorized above)
+  if (!isNeutral) {
+    for (const rule of BANK_RULES) {
+      for (const pattern of rule.patterns) {
+        if (pattern.test(cleaned)) {
+          if (rule.type !== undefined && !typeExplicit) type = rule.type;
+          category = rule.category;
+          confidence += 25;
+          break;
+        }
       }
+      if (confidence >= 25) break;
     }
-    if (confidence >= 25) break;
   }
 
   // Extract merchant name

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency, formatDate } from '../utils/formatters';
@@ -7,14 +7,62 @@ import type { Transaction } from '../types';
 interface Props {
   transaction: Transaction;
   onClose: () => void;
+  onUpdate?: (id: number, updates: Partial<Transaction>) => void;
 }
 
-export function TransactionDetailModal({ transaction, onClose }: Props) {
+export function TransactionDetailModal({ transaction, onClose, onUpdate }: Props) {
   const [isVisible, setIsVisible] = useState(true);
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [editAmount, setEditAmount] = useState('');
+  const [current, setCurrent] = useState(transaction);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCurrent(transaction);
+  }, [transaction]);
 
   const handleClose = () => {
     setIsVisible(false);
   };
+
+  const handleAmountClick = useCallback(() => {
+    if (!onUpdate) return;
+    setEditAmount(current.amount.toString());
+    setIsEditingAmount(true);
+  }, [onUpdate, current.amount]);
+
+  const handleTypeClick = useCallback(() => {
+    if (!onUpdate || current.id == null) return;
+    const nextType: Transaction['type'] =
+      current.type === 'expense' ? 'income' :
+      current.type === 'income' ? 'neutral' : 'expense';
+    onUpdate(current.id, { type: nextType });
+    setCurrent((prev) => ({ ...prev, type: nextType }));
+  }, [onUpdate, current.id, current.type]);
+
+  const saveAmount = useCallback(() => {
+    const parsed = parseFloat(editAmount);
+    if (!isNaN(parsed) && parsed > 0 && parsed !== current.amount && current.id != null && onUpdate) {
+      onUpdate(current.id, { amount: parsed });
+      setCurrent((prev) => ({ ...prev, amount: parsed }));
+    }
+    setIsEditingAmount(false);
+  }, [editAmount, current.amount, current.id, onUpdate]);
+
+  const handleAmountKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveAmount();
+    } else if (e.key === 'Escape') {
+      setIsEditingAmount(false);
+    }
+  }, [saveAmount]);
+
+  useEffect(() => {
+    if (isEditingAmount && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingAmount]);
 
   return createPortal(
     <AnimatePresence onExitComplete={() => !isVisible && onClose()}>
@@ -51,47 +99,70 @@ export function TransactionDetailModal({ transaction, onClose }: Props) {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Amount</p>
-                  <p className={`text-lg font-bold ${transaction.type === 'expense' ? 'text-danger' : 'text-success'}`}>
-                    {transaction.type === 'expense' ? '−' : '+'}{formatCurrency(transaction.amount)}
-                  </p>
+                  {isEditingAmount ? (
+                    <input
+                      ref={inputRef}
+                      type="number"
+                      inputMode="decimal"
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value)}
+                      onBlur={saveAmount}
+                      onKeyDown={handleAmountKeyDown}
+                      className="w-full mt-1 text-lg font-bold bg-transparent border-b-2 border-accent text-label outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                  ) : (
+                    <p
+                      className={`text-lg font-bold cursor-pointer hover:opacity-80 transition-opacity ${onUpdate ? '' : 'cursor-default'} ${
+                        current.type === 'expense' ? 'text-danger' : current.type === 'income' ? 'text-success' : 'text-tertiary'
+                      }`}
+                      onClick={handleAmountClick}
+                      title={onUpdate ? 'Click to edit amount' : undefined}
+                    >
+                      {current.type === 'expense' ? '−' : current.type === 'income' ? '+' : '±'}{formatCurrency(current.amount)}
+                    </p>
+                  )}
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Date</p>
-                  <p className="text-sm font-semibold text-label">{formatDate(transaction.date)}</p>
+                  <p className="text-sm font-semibold text-label">{formatDate(current.date)}</p>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Type</p>
-                  <span className={`inline-block mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full ${
-                    transaction.type === 'expense' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
-                  }`}>
-                    {transaction.type.toUpperCase()}
+                  <span
+                    className={`inline-block mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full select-none ${onUpdate ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${
+                      current.type === 'expense' ? 'bg-danger-soft text-danger' : current.type === 'income' ? 'bg-success-soft text-success' : 'bg-surface-2 text-secondary'
+                    }`}
+                    onClick={handleTypeClick}
+                    title={onUpdate ? 'Click to change type' : undefined}
+                  >
+                    {current.type.toUpperCase()}
                   </span>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Category</p>
-                  <p className="text-sm font-semibold text-label">{transaction.category}</p>
+                  <p className="text-sm font-semibold text-label">{current.category}</p>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Merchant</p>
-                  <p className="text-sm font-semibold text-label">{transaction.merchant || 'N/A'}</p>
+                  <p className="text-sm font-semibold text-label">{current.merchant || 'N/A'}</p>
                 </div>
                 <div className="bg-surface-2 rounded-xl p-3">
                   <p className="text-[10px] text-tertiary uppercase font-medium">Source</p>
-                  <p className="text-sm font-semibold text-label">{transaction.source === 'sms' ? 'SMS Import' : 'Manual'}</p>
+                  <p className="text-sm font-semibold text-label">{current.source === 'sms' ? 'SMS Import' : 'Manual'}</p>
                 </div>
               </div>
 
               <div>
                 <p className="text-[10px] text-tertiary uppercase font-medium mb-1.5">Description</p>
-                <p className="text-sm text-label">{transaction.description || transaction.category}</p>
+                <p className="text-sm text-label">{current.description || current.category}</p>
               </div>
 
-              {transaction.source === 'sms' && transaction.smsText && (
+              {current.source === 'sms' && current.smsText && (
                 <div>
                   <p className="text-[10px] text-tertiary uppercase font-medium mb-1.5">Raw SMS</p>
                   <div className="bg-surface-2 rounded-xl p-3 max-h-40 overflow-y-auto">
                     <p className="text-sm text-label leading-relaxed whitespace-pre-wrap break-words">
-                      {transaction.smsText}
+                      {current.smsText}
                     </p>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 export interface Transaction {
   id?: number;
   amount: number;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'neutral';
   category: string;
   description: string;
   merchant?: string;
@@ -21,7 +21,7 @@ export interface Category {
 
 export interface SMSResult {
   amount: number;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'neutral';
   category: string;
   description: string;
   date: string;
