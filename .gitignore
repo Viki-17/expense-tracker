@@ -10,3 +10,6 @@ android/build/
 *.aab
 .DS_Store
 *.log
+android/local.properties
+.env
+.env.local

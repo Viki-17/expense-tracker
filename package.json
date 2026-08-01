@@ -1,8 +1,30 @@
 {
   "name": "expense-tracker-pwa",
-  "private": true,
   "version": "1.0.0",
+  "description": "Local-first expense tracker with SMS auto-parsing for Indian bank/UPI transactions. All data stays on-device.",
   "type": "module",
+  "license": "MIT",
+  "author": "Expense Tracker Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Viki-17/expense-tracker"
+  },
+  "bugs": {
+    "url": "https://github.com/Viki-17/expense-tracker/issues"
+  },
+  "homepage": "https://github.com/Viki-17/expense-tracker#readme",
+  "keywords": [
+    "expense-tracker",
+    "pwa",
+    "capacitor",
+    "offline-first",
+    "react",
+    "dexie",
+    "indexeddb",
+    "sms-parser",
+    "finance",
+    "budgeting"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "node scripts/generate-icons.mjs && tsc -b && vite build",
@@ -10,13 +32,13 @@
     "build:cap": "export VITE_NO_PWA=true && node scripts/generate-icons.mjs && tsc -b && vite build",
     "preview": "vite preview",
     "preview:web": "export VITE_BASE=/expense-tracker/ && vite preview",
-    "cap:init": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap init",
-    "cap:add:android": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap add android",
-    "cap:sync": "npm run build:cap && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap sync",
-    "cap:sync:web": "npm run build:web && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap sync",
-    "cap:open:android": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap open android",
-    "cap:run:android": "export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && npx cap run android",
-    "build:android": "npm run cap:sync && cd android && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && ./gradlew clean assembleDebug",
+    "cap:init": "npx cap init",
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npm run build:cap && npx cap sync",
+    "cap:sync:web": "npm run build:web && npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:run:android": "npx cap run android",
+    "build:android": "npm run cap:sync && cd android && ./gradlew clean assembleDebug",
     "seed-sms": "bash scripts/seed-sms.sh",
     "android:preview": "bash scripts/preview-android.sh"
   },

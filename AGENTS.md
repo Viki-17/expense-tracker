@@ -32,7 +32,7 @@
 
 ## Project Identity
 
-- **Name**: `expense-tracker-pwa` (private)
+- **Name**: `expense-tracker-pwa`
 - **App ID**: `com.expensetracker.app`
 - **Description**: Local-first expense tracker with SMS auto-parsing for Indian bank/UPI transactions
 - **All data stays on-device** — IndexedDB via Dexie, zero server calls
@@ -163,14 +163,17 @@ Main export: `parseSMS(message: string) => SMSResult | null`, `parseMultipleSMS(
 
 **MainActivity** manually registers `SmsReaderPlugin.class` before `super.onCreate()`.
 
-### Known Android Issue
+### Building from source
 
-The `android/` directory only contains `app/src/main/java/...` source files. It **lacks**:
-- Gradle wrapper, `build.gradle`, `settings.gradle`
-- `AndroidManifest.xml` (needs `<uses-permission android:name="android.permission.READ_SMS" />`)
-- Other standard Capacitor Android project scaffolding
+The `android/` directory contains the full Capacitor Android project including Gradle wrapper, `AndroidManifest.xml` with SMS permissions, and all scaffolding. To set up a fresh clone:
 
-Running `npx cap add android` (via `npm run cap:add:android`) should regenerate the full project. Then `npm run cap:sync` copies web assets. See `scripts/setup-android.sh`.
+```bash
+npm run cap:add:android   # if android/ is missing
+npm run cap:sync          # build web + sync to android
+npm run cap:open:android  # open in Android Studio
+```
+
+See `scripts/setup-android.sh` for the initial setup script.
 
 ## Platform Detection
 
