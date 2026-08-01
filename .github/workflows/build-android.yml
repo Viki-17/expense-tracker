@@ -1,0 +1,89 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (defaults to "latest" for rolling updates)'
+        required: true
+        default: 'latest'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build APK
+        run: npm run build:android
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Manage Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          TAG="${{ github.event.inputs.release_tag }}"
+
+          if [ "$TAG" = "latest" ]; then
+            git tag -f "$TAG"
+            git push origin "$TAG" -f
+          else
+            if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+              echo "::error::Tag $TAG already exists on remote. Use 'latest' for rolling updates or increment the version."
+              exit 1
+            fi
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Create GitHub Release
+        run: |
+          TAG="${{ github.event.inputs.release_tag }}"
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ "$TAG" = "latest" ]; then
+            gh release delete "$TAG" --yes 2>/dev/null || true
+            gh release create "$TAG" "$APK" \
+              --title "Latest Build" \
+              --generate-notes \
+              --latest
+          else
+            gh release create "$TAG" "$APK" \
+              --title "$TAG" \
+              --generate-notes
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
