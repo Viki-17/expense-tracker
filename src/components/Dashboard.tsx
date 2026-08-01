@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,13 +44,7 @@ export default function Dashboard() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [monthlyTotals, setMonthlyTotals] = useState<
-    { month: string; expense: number; income: number }[]
-  >([]);
-
-  useEffect(() => {
-    db.getMonthlyTotals(90).then(setMonthlyTotals);
-  }, []);
+  const monthlyTotals = useLiveQuery(() => db.getMonthlyTotals(90), []) || [];
 
   useEffect(() => {
     sessionStorage.setItem('dashboardTab', tab);

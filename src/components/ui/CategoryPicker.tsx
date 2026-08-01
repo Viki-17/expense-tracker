@@ -41,10 +41,10 @@ export function CategoryPicker({ categories, anchorRect, onSelect, onClose }: Pr
         onClose();
       }
     };
-    const timer = setTimeout(() => document.addEventListener('click', handleClick), 0);
+    const timer = setTimeout(() => document.addEventListener('click', handleClick, true), 0);
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('click', handleClick);
+      document.removeEventListener('click', handleClick, true);
     };
   }, [onClose]);
 
