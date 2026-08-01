@@ -80,7 +80,7 @@ export default function AddTransaction() {
             type="button"
             onClick={() => setType('income')}
             className={`tap py-2.5 rounded-2xl text-sm font-semibold transition-all ${
-              type === 'income' ? 'bg-success text-white shadow-card' : 'bg-surface-2 text-secondary'
+              type === 'income' ? 'bg-success text-on-accent shadow-card' : 'bg-surface-2 text-secondary'
             }`}
           >
             Income

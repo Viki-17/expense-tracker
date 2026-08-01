@@ -1,11 +1,11 @@
-# Contributing to Expense Tracker
+# Contributing to KaiKanakku
 
 Thanks for your interest in contributing!
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/expense-tracker.git`
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/kaikanakku.git`
 3. Install dependencies: `npm install`
 4. Start the dev server: `npm run dev`
 5. Make your changes
@@ -47,7 +47,7 @@ refactor: extract transaction row into separate component
 ## Pull Request Process
 
 1. Ensure your code type-checks: `npx tsc -b`
-2. Test in both light and dark mode
+2. Test in dark mode (the app is always dark)
 3. If adding a new route, follow the lazy import pattern in `App.tsx`
 4. Update the README if adding new scripts or changing the project structure
 5. Keep PRs focused — one feature or fix per PR

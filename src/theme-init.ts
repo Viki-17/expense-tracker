@@ -1,17 +1,10 @@
-const STORAGE_KEY = 'et-theme';
+const STORAGE_KEY = 'kk-theme';
 
 function applyInitialTheme() {
-  const stored = localStorage.getItem(STORAGE_KEY) as 'light' | 'dark' | null;
-  const theme =
-    stored === 'light' || stored === 'dark'
-      ? stored
-      : window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
   const root = document.documentElement;
-  if (theme === 'dark') root.classList.add('dark');
-  else root.classList.remove('dark');
-  root.style.colorScheme = theme;
+  root.classList.add('dark');
+  root.style.colorScheme = 'dark';
+  localStorage.setItem(STORAGE_KEY, 'dark');
 }
 
 try {

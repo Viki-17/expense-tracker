@@ -23,7 +23,7 @@ export default function BottomNav() {
               <NavLink
                 key={to}
                 to={to}
-                className="tap -mt-6 flex items-center justify-center w-14 h-14 rounded-2xl bg-accent text-white shadow-card"
+                className="tap -mt-6 flex items-center justify-center w-14 h-14 rounded-2xl bg-accent text-on-accent shadow-card"
                 aria-label={label}
               >
                 <Icon className="w-7 h-7" />

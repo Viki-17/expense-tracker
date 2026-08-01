@@ -21,10 +21,10 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-full w-64 bg-surface border-r border-separator/60 flex flex-col">
       <div className="h-16 flex items-center px-6 border-b border-separator/60">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-white font-bold text-sm">
-            ET
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-lime-300 flex items-center justify-center text-on-accent font-bold text-sm shadow-lg shadow-accent/20">
+            KK
           </div>
-          <span className="text-lg font-bold text-label">Expense Tracker</span>
+          <span className="text-lg font-bold text-label">KaiKanakku</span>
         </div>
       </div>
 

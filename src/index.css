@@ -27,44 +27,31 @@
     --sar: env(safe-area-inset-right, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
 
-    /* Semantic tokens — light (Apple HIG) */
-    --canvas: 242 242 247;
-    --surface: 255 255 255;
-    --surface-2: 249 249 249;
-    --surface-3: 242 242 247;
-    --label: 28 28 30;
-    --secondary: 60 60 67;
-    --tertiary: 142 142 147;
-    --separator: 229 229 234;
-    --accent: 0 122 255;
-    --accent-soft: 229 242 255;
-    --danger: 255 59 48;
-    --success: 52 199 89;
-    --warning: 255 149 0;
-    --danger-soft: 255 235 233;
-    --success-soft: 232 252 240;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
-    --ring: 0 122 255;
-  }
-
-  .dark {
-    --canvas: 0 0 0;
-    --surface: 28 28 30;
-    --surface-2: 44 44 46;
-    --surface-3: 54 54 58;
-    --label: 255 255 255;
-    --secondary: 235 235 245;
-    --tertiary: 152 152 157;
-    --separator: 56 56 58;
-    --accent: 10 132 255;
-    --accent-soft: 22 53 88;
-    --danger: 255 69 58;
-    --success: 48 209 88;
-    --warning: 255 159 10;
-    --danger-soft: 77 31 28;
-    --success-soft: 30 54 38;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
-    --ring: 10 132 255;
+    /*
+     * Theme: KaiKanakku — always-dark olive + neon lime
+     *
+     * SOURCE OF TRUTH: src/theme.ts
+     * To change the theme, update src/theme.ts first,
+     * then mirror the `rgb` values here.
+     */
+    --canvas: 10 15 10;
+    --surface: 18 26 18;
+    --surface-2: 26 36 26;
+    --surface-3: 36 48 36;
+    --label: 245 255 242;
+    --secondary: 154 176 147;
+    --tertiary: 106 122 96;
+    --separator: 36 48 36;
+    --accent: 227 246 117;
+    --accent-soft: 26 58 22;
+    --accent-glow: 240 255 160;
+    --danger: 255 107 107;
+    --success: 131 247 116;
+    --warning: 250 204 21;
+    --danger-soft: 80 35 35;
+    --success-soft: 26 58 22;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    --ring: 227 246 117;
   }
 }
 
@@ -98,6 +85,15 @@
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .contain-layout { contain: layout paint style; }
   .gpu { transform: translateZ(0); will-change: transform; }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(227 246 117 / 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(227 246 117 / 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .text-on-accent {
+    color: #0a0a00;
+  }
 }
 
 ::-webkit-scrollbar { display: none; }

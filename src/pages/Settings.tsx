@@ -2,24 +2,23 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, DEFAULT_CATEGORIES } from '../db';
 import { useCategories } from '../hooks/useCategories';
-import { useTheme } from '../contexts/ThemeProvider';
 import { getAutoImportMerchants, removeAutoImportMerchant, clearAutoImportMerchants } from '../utils/autoImport';
 import { TopBar } from '../components/ui/TopBar';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { IconButton } from '../components/ui/IconButton';
-import { ArrowLeftIcon, SunIcon, MoonIcon, DownloadIcon, UploadIcon, TrashIcon, CategoryIcon } from '../components/Icons';
+import { ArrowLeftIcon, DownloadIcon, UploadIcon, TrashIcon, CategoryIcon } from '../components/Icons';
 import type { Category } from '../types';
+import { theme } from '../theme';
 
 const DEFAULT_NAMES = new Set(DEFAULT_CATEGORIES.map((c) => c.name));
 
 export default function Settings() {
   const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
-  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [newCatName, setNewCatName] = useState('');
-  const [newCatColor, setNewCatColor] = useState('#6366f1');
+  const [newCatColor, setNewCatColor] = useState<string>(theme.defaultCategoryColor);
   const [exportStatus, setExportStatus] = useState('');
   const [autoMerchants, setAutoMerchants] = useState(getAutoImportMerchants);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
@@ -33,7 +32,7 @@ export default function Settings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `expense-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `kaikanakku-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     setExportStatus('Exported successfully!');
@@ -79,7 +78,7 @@ export default function Settings() {
     if (!newCatName.trim()) return;
     await addCategory({ name: newCatName.trim(), icon: 'other', color: newCatColor });
     setNewCatName('');
-    setNewCatColor('#6366f1');
+    setNewCatColor(theme.defaultCategoryColor);
   }, [newCatName, newCatColor, addCategory]);
 
   const handleStartEdit = useCallback((cat: Category) => {
@@ -111,26 +110,6 @@ export default function Settings() {
         }
       />
       <div className="px-4 max-w-2xl mx-auto w-full pt-4 space-y-4" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
-        {/* Appearance */}
-        <Card>
-          <h3 className="text-sm font-bold text-label mb-3">Appearance</h3>
-          <button
-            onClick={toggle}
-            className="tap w-full flex items-center justify-between p-3 rounded-xl bg-surface-2 active:scale-[0.99] transition-transform"
-          >
-            <div className="flex items-center gap-3">
-              {theme === 'dark' ? <MoonIcon className="w-5 h-5 text-accent" /> : <SunIcon className="w-5 h-5 text-warning" />}
-              <div className="text-left">
-                <p className="text-sm font-semibold text-label">{theme === 'dark' ? 'Dark' : 'Light'} mode</p>
-                <p className="text-xs text-tertiary">Tap to switch</p>
-              </div>
-            </div>
-            <div className={`w-12 h-7 rounded-full p-0.5 transition-colors ${theme === 'dark' ? 'bg-accent' : 'bg-surface-3'}`}>
-              <div className={`w-6 h-6 rounded-full bg-white shadow transition-transform ${theme === 'dark' ? 'translate-x-5' : ''}`} />
-            </div>
-          </button>
-        </Card>
-
         {/* Data management */}
         <Card>
           <h3 className="text-sm font-bold text-label mb-3">Data Management</h3>
@@ -295,9 +274,9 @@ export default function Settings() {
         {/* About */}
         <Card>
           <h3 className="text-sm font-bold text-label mb-2">About</h3>
-          <p className="text-sm text-secondary">Expense Tracker v1.0.0</p>
+          <p className="text-sm text-secondary">KaiKanakku v1.0.0</p>
           <p className="text-xs text-tertiary mt-1">
-            A local-first expense tracker. All data stays on your device using IndexedDB — nothing is ever sent to a server.
+            A local-first personal expense tracker. All data stays on your device using IndexedDB — nothing is ever sent to a server.
           </p>
         </Card>
       </div>

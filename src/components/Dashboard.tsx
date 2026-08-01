@@ -670,7 +670,7 @@ function MerchantsTab({ merchants, onAdd }: MerchantsTabProps) {
       <EmptyState
         icon={<WalletIcon className="w-7 h-7" />}
         title="No merchants tracked"
-        subtitle="Expenses will be grouped by merchant here once added."
+        subtitle="Transactions will be grouped by merchant here once added."
         action={
           <Button onClick={onAdd} size="md">
             <PlusCircleIcon className="w-4 h-4 inline mr-1.5" />

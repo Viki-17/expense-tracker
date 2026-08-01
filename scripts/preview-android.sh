@@ -97,14 +97,14 @@ fi
 # ── 5. Uninstall old version (avoid signature conflicts) ─────
 echo ""
 echo -e "${YELLOW}📦 Uninstalling previous version...${NC}"
-"$Adb" uninstall com.expensetracker.app > /dev/null 2>&1 || true
+"$Adb" uninstall com.kaikanakku.app > /dev/null 2>&1 || true
 echo "   ✅ Done"
 
 # ── 6. Build APK ─────────────────────────────────────────────
 echo ""
 echo -e "${YELLOW}🔨 Building APK...${NC}"
-npm run cap:sync > /dev/null 2>&1
-(cd android && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && ./gradlew clean assembleDebug > /dev/null 2>&1)
+npm run cap:sync 2>&1
+(cd android && export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home && ./gradlew clean assembleDebug 2>&1)
 echo -e "${GREEN}   ✅ APK built${NC}"
 
 # ── 7. Install ───────────────────────────────────────────────
@@ -116,7 +116,7 @@ echo -e "${GREEN}   ✅ Installed${NC}"
 # ── 8. Launch ────────────────────────────────────────────────
 echo ""
 echo -e "${YELLOW}🚀 Launching app...${NC}"
-"$Adb" shell am start -n com.expensetracker.app/com.expensetracker.MainActivity > /dev/null 2>&1
+"$Adb" shell am start -n com.kaikanakku.app/com.kaikanakku.MainActivity > /dev/null 2>&1
 echo ""
 
 echo -e "${GREEN}══════════════════════════════════════════${NC}"

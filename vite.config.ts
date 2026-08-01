@@ -1,3 +1,4 @@
+// Theme source of truth: src/theme.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -13,11 +14,11 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'icon.svg', 'icon-192.png', 'icon-512.png'],
         manifest: {
-          name: 'Expense Tracker',
-          short_name: 'Expenses',
-          description: 'Smart expense tracker with SMS parsing',
-          theme_color: '#6366f1',
-          background_color: '#6366f1',
+          name: 'KaiKanakku',
+          short_name: 'KaiKanakku',
+          description: 'Smart personal expense tracker with SMS auto-parsing for Indian bank/UPI transactions',
+          theme_color: '#0f1f0f',
+          background_color: '#0f1f0f',
           display: 'standalone',
           orientation: 'any',
           start_url: '.',

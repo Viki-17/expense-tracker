@@ -25,11 +25,11 @@
   </defs>
 
   <!-- Background -->
-  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="128" fill="url(#glow)"/>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
 
   <!-- Hand holding the bag -->
-  <g transform="translate(256, 358)">
+  <g transform="translate(256, 268)">
     <!-- Wrist / cuff -->
     <rect x="-84" y="28" width="168" height="44" rx="11" fill="#2a3a24"/>
     <rect x="-78" y="33" width="156" height="32" rx="8" fill="#1f2a18"/>
@@ -42,7 +42,7 @@
   </g>
 
   <!-- Money bag -->
-  <g transform="translate(256, 215)">
+  <g transform="translate(256, 125)">
     <!-- Bag body -->
     <path d="M-70 82 C-90 62, -100 2, -80 -46 C-70 -76, -52 -92, -37 -107 L37 -107 C52 -92, 70 -76, 80 -46 C100 2, 90 62, 70 82 C52 106, -52 106, -70 82 Z" fill="url(#bag)"/>
     <!-- Bag top / cinched neck -->
@@ -68,4 +68,7 @@
     <!-- Shine highlight -->
     <ellipse cx="-30" cy="-40" rx="19" ry="27" fill="white" opacity="0.12"/>
   </g>
+
+  <!-- App name -->
+  <text x="256" y="380" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="42" font-weight="700" fill="#f5fff2" letter-spacing="1">KaiKanakku</text>
 </svg>

@@ -1,4 +1,4 @@
-package com.expensetracker.plugins;
+package com.kaikanakku.plugins;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;

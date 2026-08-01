@@ -1,6 +1,6 @@
-# Expense Tracker
+# KaiKanakku
 
-> Local-first expense tracker with SMS auto-parsing for Indian bank/UPI transactions.
+> KaiKanakku — a local-first personal expense tracker with SMS auto-parsing for Indian bank/UPI transactions.
 > All data stays on your device — nothing is ever sent to a server.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -16,7 +16,7 @@
 - **Dashboard** — spending ring, monthly bar chart, category breakdown, merchant breakdown
 - **Budgets** — per-category monthly budget tracking with progress bars
 - **Virtualized lists** — smooth scrolling even with thousands of transactions
-- **Dark mode** — system-aware with manual toggle
+- **Always-dark KaiKanakku theme** — premium teal/cyan fintech look
 - **Export/Import** — JSON backup and restore
 - **Custom categories** — add, edit, delete custom spending categories
 
@@ -26,7 +26,7 @@
 |-------|-----------|
 | Framework | React 18 (TypeScript strict mode) |
 | Build | Vite 5 |
-| Styling | Tailwind CSS 3.4 (dark mode) |
+| Styling | Tailwind CSS 3.4 (always-dark teal theme) |
 | Local DB | Dexie.js 4 (IndexedDB) |
 | Charts | Recharts 2.12 |
 | Routing | React Router DOM 6 |
@@ -48,8 +48,8 @@
 ## Installation
 
 ```bash
-git clone https://github.com/Viki-17/expense-tracker.git
-cd expense-tracker
+git clone https://github.com/Viki-17/kaikanakku.git
+cd kaikanakku
 npm install
 ```
 
@@ -153,11 +153,11 @@ Starts emulator, builds APK, installs, and launches in one step.
 src/
 ├── main.tsx                  # React entry
 ├── App.tsx                   # Routes
-├── index.css                 # Tailwind + tokens + safe-area
+├── index.css                 # Tailwind + KaiKanakku tokens + safe-area
 ├── types/index.ts            # TypeScript types
 ├── db/index.ts               # Dexie schema + query helpers
 ├── contexts/
-│   └── ThemeProvider.tsx      # Dark/light theme context
+│   └── ThemeProvider.tsx      # Always-dark theme context
 ├── hooks/
 │   ├── useTransactions.ts     # CRUD + live queries
 │   ├── useCategories.ts       # Category management
@@ -199,7 +199,7 @@ src/
 | `/budgets` | Budgets | Per-category monthly budget tracking |
 | `/category/:name` | Category Detail | Category drill-down with monthly chart |
 | `/merchant/:name` | Merchant Detail | Merchant drill-down with monthly chart |
-| `/settings` | Settings | Theme, export/import, reset, custom categories |
+| `/settings` | Settings | Export/import, reset, custom categories |
 
 ## Database
 
@@ -208,7 +208,7 @@ Dexie.js (IndexedDB) with two tables:
 - **transactions** — `++id, type, category, date, amount, source, merchant, [type+date], [category+date]`
 - **categories** — `++id, name`
 
-14 default categories pre-populated. Data is never sent anywhere — stays in the browser's IndexedDB.
+15 default categories pre-populated. Data is never sent anywhere — stays in the browser's IndexedDB.
 
 ## SMS Parser
 
@@ -226,8 +226,9 @@ Returns confidence score (0–95), amount, type, category, merchant, description
 |--------|---------|-------------|
 | `dev` | `npm run dev` | Start Vite dev server on port 5173 |
 | `build` | `npm run build` | Type-check + build for web (PWA enabled) |
-| `build:web` | `npm run build:web` | Build with `VITE_ROUTER_BASE=/expense-tracker` for sub-path deployment |
+| `build:web` | `npm run build:web` | Build with `VITE_ROUTER_BASE=/kaikanakku` for sub-path deployment |
 | `build:cap` | `npm run build:cap` | Build for Capacitor (PWA disabled, relative paths) |
+| `build:android` | `npm run build:android` | Build Capacitor + regenerate Android assets + assemble debug APK |
 | `preview` | `npm run preview` | Preview production build locally |
 | `preview:web` | `npm run preview:web` | Preview with sub-path base |
 | `cap:init` | `npm run cap:init` | Initialize Capacitor config |
@@ -236,7 +237,6 @@ Returns confidence score (0–95), amount, type, category, merchant, description
 | `cap:sync:web` | `npm run cap:sync:web` | Build for web + sync to Android |
 | `cap:open:android` | `npm run cap:open:android` | Open Android project in Android Studio |
 | `cap:run:android` | `npm run cap:run:android` | Build + run on connected Android device/emulator |
-| `build:android` | `npm run build:android` | Build debug APK via Gradle |
 | `seed-sms` | `npm run seed-sms` | Seed emulator with test SMS messages |
 | `android:preview` | `npm run android:preview` | One-command emulator launch (start, build, install) |
 

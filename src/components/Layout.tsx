@@ -31,7 +31,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="flex h-dvh bg-canvas">
+    <div className="flex h-dvh bg-canvas bg-kk-glow bg-grid bg-no-repeat">
       <div className="hidden lg:block">
         <Sidebar />
       </div>

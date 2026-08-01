@@ -382,9 +382,9 @@ export default function SmartSMSReader() {
         </div>
       )}
       {isNative && (
-        <div className="card bg-accent rounded-3xl p-5 text-white shadow-card">
+        <div className="card bg-accent rounded-3xl p-5 text-on-accent shadow-card">
           <h3 className="text-lg font-bold mb-1">Auto-Scan SMS</h3>
-          <p className="text-white/80 text-sm mb-4">
+          <p className="text-on-accent/80 text-sm mb-4">
             Scan your SMS inbox to find bank & UPI transaction messages.
             Only messages that look like transactions are read.
           </p>
@@ -392,27 +392,27 @@ export default function SmartSMSReader() {
           <div className="space-y-3 mb-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] text-white/70 mb-1">Start Date</label>
+                <label className="block text-[11px] text-on-accent/70 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={startDate}
                   max={endDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+                  className="w-full px-3 py-2 bg-[#0a0a00]/10 border border-[#0a0a00]/20 rounded-xl text-sm text-on-accent focus:outline-none focus:ring-2 focus:ring-[#0a0a00]/40"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-white/70 mb-1">End Date</label>
+                <label className="block text-[11px] text-on-accent/70 mb-1">End Date</label>
                 <input
                   type="date"
                   value={endDate}
                   min={startDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+                  className="w-full px-3 py-2 bg-[#0a0a00]/10 border border-[#0a0a00]/20 rounded-xl text-sm text-on-accent focus:outline-none focus:ring-2 focus:ring-[#0a0a00]/40"
                 />
               </div>
             </div>
-            <p className="text-[11px] text-white/60">Default range: last 2 years</p>
+            <p className="text-[11px] text-on-accent/60">Default range: last 2 years</p>
           </div>
 
           {!permissionGranted ? (
@@ -433,7 +433,7 @@ export default function SmartSMSReader() {
           )}
 
           {importedCount > 0 && (
-            <p className="text-center text-sm mt-3 text-white/80">
+            <p className="text-center text-sm mt-3 text-on-accent/80">
               {importedCount} imported this session
             </p>
           )}
@@ -509,7 +509,7 @@ export default function SmartSMSReader() {
                     }`}
                   >
                     {(allGroupSelected || someGroupSelected) && (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <svg className="w-3 h-3 text-on-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         {allGroupSelected ? (
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         ) : (
@@ -579,7 +579,7 @@ export default function SmartSMSReader() {
                               isSelected ? 'bg-accent border-accent' : 'border-separator'
                             }`}>
                               {isSelected && (
-                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <svg className="w-3 h-3 text-on-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
@@ -619,7 +619,7 @@ export default function SmartSMSReader() {
                               className={`mt-1 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
                                 imported
                                   ? 'bg-success-soft text-success cursor-default'
-                                  : 'bg-accent text-white hover:brightness-110'
+                                  : 'bg-accent text-on-accent hover:brightness-110'
                               }`}
                             >
                               {imported ? (preExisting ? 'Already Imported' : 'Imported') : 'Import'}
@@ -648,7 +648,7 @@ export default function SmartSMSReader() {
               </span>
               <button
                 onClick={bulkImport}
-                className="px-5 py-2 bg-accent text-white rounded-xl text-sm font-semibold hover:brightness-110 transition-colors"
+                className="px-5 py-2 bg-accent text-on-accent rounded-xl text-sm font-semibold hover:brightness-110 transition-colors"
               >
                 Import {selectedForImport.size} Transaction{selectedForImport.size !== 1 ? 's' : ''}
               </button>
@@ -709,7 +709,7 @@ export default function SmartSMSReader() {
                       onClick={() => handleUpdateSMSResultType('income')}
                       className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
                         selectedSMS.type === 'income'
-                          ? 'bg-success text-white shadow-sm'
+                          ? 'bg-success text-on-accent shadow-sm'
                           : 'bg-surface-3 text-secondary hover:bg-success-soft/50'
                       }`}
                     >
@@ -835,7 +835,7 @@ export default function SmartSMSReader() {
               </button>
               <button
                 onClick={confirmDuplicateImport}
-                className="flex-1 py-2.5 bg-warning text-white rounded-xl text-sm font-medium hover:brightness-110 transition-colors"
+                className="flex-1 py-2.5 bg-warning text-on-accent rounded-xl text-sm font-medium hover:brightness-110 transition-colors"
               >
                 Add Anyway
               </button>

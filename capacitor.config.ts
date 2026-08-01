@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.expensetracker.app',
-  appName: 'Expense Tracker',
+  appId: 'com.kaikanakku.app',
+  appName: 'KaiKanakku',
   webDir: 'dist',
   bundledWebRuntime: false,
   server: {

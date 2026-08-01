@@ -10,8 +10,8 @@ interface Props {
   compact?: boolean;
 }
 
-const INPUT_CLASS = "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all";
-const LABEL_CLASS = "block text-sm font-medium text-gray-700 mb-1.5";
+const INPUT_CLASS = "w-full px-4 py-3 bg-surface-2 border border-separator/60 rounded-xl text-sm text-label placeholder:text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all";
+const LABEL_CLASS = "block text-sm font-medium text-secondary mb-1.5";
 
 const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Other'];
 const EXCLUDED_FROM_EXPENSE = new Set(['Salary', 'Freelance', 'Investment']);
@@ -60,7 +60,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
               type === 'expense'
                 ? 'bg-expense-500 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600'
+                : 'bg-surface-2 text-secondary'
             }`}
           >
             Expense
@@ -70,8 +70,8 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
             onClick={() => setType('income')}
             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
               type === 'income'
-                ? 'bg-income-500 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600'
+                ? 'bg-income-500 text-on-accent shadow-sm'
+                : 'bg-surface-2 text-secondary'
             }`}
           >
             Income
@@ -81,8 +81,8 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
             onClick={() => setType('neutral')}
             className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
               type === 'neutral'
-                ? 'bg-gray-500 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-600'
+                ? 'bg-tertiary text-canvas shadow-sm'
+                : 'bg-surface-2 text-secondary'
             }`}
           >
             Neutral
@@ -102,8 +102,8 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
                 onClick={() => setCategory(c.name)}
                 className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-xs transition-all ${
                   category === c.name
-                    ? 'bg-primary-50 ring-2 ring-primary-500/30 text-primary-700 font-medium'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    ? 'bg-accent-soft ring-2 ring-accent/40 text-accent font-medium'
+                    : 'bg-surface-2 text-secondary hover:bg-surface-3'
                 }`}
               >
                 <CategoryIcon name={c.name} className="w-5 h-5" />
@@ -112,7 +112,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
             ))}
           </div>
         </div>
-        <button type="submit" className="w-full py-3 bg-primary-500 text-white rounded-xl font-medium text-sm hover:bg-primary-600 transition-colors">
+        <button type="submit" className="w-full py-3 bg-accent text-on-accent rounded-xl font-medium text-sm hover:brightness-110 transition-all">
           Add {type === 'expense' ? 'Expense' : type === 'income' ? 'Income' : 'Neutral'}
         </button>
       </form>
@@ -128,7 +128,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
           className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
             type === 'expense'
               ? 'bg-expense-500 text-white shadow-lg shadow-expense-500/25'
-              : 'bg-white border border-gray-200 text-gray-600'
+              : 'bg-surface-2 border border-separator/60 text-secondary'
           }`}
         >
           💸 Expense
@@ -138,8 +138,8 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
           onClick={() => setType('income')}
           className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
             type === 'income'
-              ? 'bg-income-500 text-white shadow-lg shadow-income-500/25'
-              : 'bg-white border border-gray-200 text-gray-600'
+              ? 'bg-income-500 text-on-accent shadow-lg shadow-income-500/25'
+              : 'bg-surface-2 border border-separator/60 text-secondary'
           }`}
         >
           💰 Income
@@ -149,8 +149,8 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
           onClick={() => setType('neutral')}
           className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
             type === 'neutral'
-              ? 'bg-gray-500 text-white shadow-lg shadow-gray-500/25'
-              : 'bg-white border border-gray-200 text-gray-600'
+              ? 'bg-tertiary text-canvas shadow-lg shadow-tertiary/25'
+              : 'bg-surface-2 border border-separator/60 text-secondary'
           }`}
         >
           ⚪ Neutral
@@ -160,7 +160,7 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
       <div>
         <label className={LABEL_CLASS}>Amount</label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-tertiary font-medium">₹</span>
           <input
             type="number"
             step="0.01"
@@ -184,8 +184,8 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
               onClick={() => setCategory(c.name)}
               className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-xs transition-all ${
                 category === c.name
-                  ? 'bg-primary-50 ring-2 ring-primary-500/30 text-primary-700 font-medium'
-                  : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  ? 'bg-accent-soft ring-2 ring-accent/40 text-accent font-medium'
+                  : 'bg-surface-2 text-secondary hover:bg-surface-3'
               }`}
             >
               <CategoryIcon name={c.name} className="w-5 h-5" />
@@ -207,12 +207,12 @@ export default function TransactionForm({ onSubmit, initial, compact }: Props) {
 
       <button
         type="submit"
-        className={`w-full py-3.5 rounded-xl font-semibold text-white text-sm transition-all ${
+        className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all ${
           type === 'expense'
-            ? 'bg-expense-500 hover:bg-expense-600 shadow-lg shadow-expense-500/25'
+            ? 'bg-expense-500 hover:bg-expense-600 text-white shadow-lg shadow-expense-500/25'
             : type === 'income'
-            ? 'bg-income-500 hover:bg-income-600 shadow-lg shadow-income-500/25'
-            : 'bg-gray-500 hover:bg-gray-600 shadow-lg shadow-gray-500/25'
+            ? 'bg-income-500 hover:bg-income-600 text-on-accent shadow-lg shadow-income-500/25'
+            : 'bg-accent hover:brightness-110 text-on-accent shadow-lg shadow-accent/25'
         }`}
       >
         Add {type === 'expense' ? 'Expense' : type === 'income' ? 'Income' : 'Neutral'}

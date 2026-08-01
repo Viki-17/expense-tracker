@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================================
-# Android Setup Script for Expense Tracker
+# Android Setup Script for KaiKanakku
 # Run this ONCE to create the Android project with Capacitor.
 # Requires: Android Studio + Android SDK + Java JDK 17
 # =============================================================================
 
 set -e
 
-echo "🏗️  Setting up Android project for Expense Tracker..."
+echo "🏗️  Setting up Android project for KaiKanakku..."
 
 # Step 1: Build the web app
 echo "📦 Building web app..."
@@ -27,11 +27,11 @@ npx cap sync
 
 # Step 4: Copy our custom plugin files (they're already in place, just verify)
 echo "🔌 Verifying custom plugin..."
-if [ -f "android/app/src/main/java/com/expensetracker/plugins/SmsReaderPlugin.java" ]; then
+if [ -f "android/app/src/main/java/com/kaikanakku/plugins/SmsReaderPlugin.java" ]; then
     echo "   ✅ SmsReaderPlugin.java found"
 else
     echo "   ⚠️  SmsReaderPlugin.java not found in expected location"
-    echo "   Copy it manually to: android/app/src/main/java/com/expensetracker/plugins/"
+    echo "   Copy it manually to: android/app/src/main/java/com/kaikanakku/plugins/"
 fi
 
 # Step 5: Remind about AndroidManifest permissions

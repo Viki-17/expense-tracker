@@ -1,4 +1,4 @@
-# Expense Tracker — Project Memory
+# KaiKanakku — Project Memory
 
 ## Performance (critical)
 
@@ -32,10 +32,11 @@
 
 ## Project Identity
 
-- **Name**: `expense-tracker-pwa`
-- **App ID**: `com.expensetracker.app`
-- **Description**: Local-first expense tracker with SMS auto-parsing for Indian bank/UPI transactions
+- **Name**: `kaikanakku`
+- **App ID**: `com.kaikanakku.app`
+- **Description**: KaiKanakku — a local-first expense tracker with SMS auto-parsing for Indian bank/UPI transactions
 - **All data stays on-device** — IndexedDB via Dexie, zero server calls
+- **Theme**: Always-dark premium teal/cyan fintech look inspired by the KaiKanakku brand
 
 ## Directory Structure
 
@@ -43,19 +44,20 @@
 /
 ├── index.html                # Entry HTML, Inter font from Google Fonts
 ├── vite.config.ts            # Vite + React + PWA plugin
-├── capacitor.config.ts       # Capacitor 8 config (appId: com.expensetracker.app)
+├── capacitor.config.ts       # Capacitor 8 config (appId: com.kaikanakku.app)
 ├── tsconfig.json             # ES2020, bundler mode, strict, isolatedModules
 ├── tailwind.config.js        # Custom semantic tokens (canvas/surface/label/etc.), darkMode: 'class', Inter font
 ├── postcss.config.js
-├── src/theme-init.ts         # Applies initial theme before React render
+├── src/theme-init.ts         # Applies initial dark theme before React render
 ├── src/contexts/ThemeProvider.tsx
 ├── scripts/
 │   ├── generate-icons.mjs    # sharp-based PNG icon generator from SVG
+│   ├── generate-android-assets.mjs # sharp-based Android launcher + splash generator
 │   └── setup-android.sh      # One-time Android project setup script
 ├── public/
-│   ├── icon.svg / icon-192.png / icon-512.png / favicon.svg
+│   ├── icon.svg / icon-192.png / icon-512.png / favicon.svg / icon-foreground.svg
 ├── android/
-│   └── app/src/main/java/com/expensetracker/
+│   └── app/src/main/java/com/kaikanakku/
 │       ├── app/MainActivity.java              # Registers SmsReaderPlugin
 │       └── plugins/SmsReaderPlugin.java       # Capacitor plugin: reads SMS inbox
 └── src/
@@ -96,7 +98,7 @@
         ├── Budgets.tsx          # Per-category monthly budget tracking with progress bars
         ├── CategoryDetail.tsx   # → <GroupDetail type="category" />
         ├── MerchantDetail.tsx   # → <GroupDetail type="merchant" />
-        └── Settings.tsx         # Export/import JSON, reset data, add custom categories, theme toggle, app info
+        └── Settings.tsx         # Export/import JSON, reset data, add custom categories, app info
 ```
 
 ## Routes
@@ -120,10 +122,10 @@ BrowserRouter with optional basename via `VITE_ROUTER_BASE` env var (for deploym
 
 **Tables**:
 - `transactions`: `++id, type, category, date, amount, source, merchant, [type+date], [category+date]` — Stores `Transaction` objects
-- `categories`: `++id, name` — Stores `Category` objects, pre-populated with 14 defaults
+- `categories`: `++id, name` — Stores `Category` objects, pre-populated with 15 defaults
 
-**Default categories** (14):
-Food & Dining, Shopping, Transport, Bills & Utilities, Entertainment, Groceries, Healthcare, Education, Travel, Rent, Investment, Salary, Freelance, Other
+**Default categories** (15):
+Food & Dining, Shopping, Transport, Bills & Utilities, Entertainment, Groceries, Healthcare, Education, Travel, Rent, Investment, Salary, Freelance, Cash, Other
 
 **Key DB methods**:
 - `getTransactionsInRange(start, end)` — date-range query, reverse sorted
@@ -173,6 +175,12 @@ npm run cap:sync          # build web + sync to android
 npm run cap:open:android  # open in Android Studio
 ```
 
+To regenerate Android launcher icons and splash screens after changing `public/icon.svg`:
+
+```bash
+npm run build:android
+```
+
 See `scripts/setup-android.sh` for the initial setup script.
 
 ## Platform Detection
@@ -183,7 +191,7 @@ See `scripts/setup-android.sh` for the initial setup script.
 
 - `vite-plugin-pwa` with `autoUpdate` register type
 - Workbox runtime caching for Google Fonts
-- `display: standalone`, theme `#6366f1`
+- `display: standalone`, theme `#0f1f0f`
 - Service worker precaches JS/CSS/HTML/images
 
 ## Scripts
@@ -192,7 +200,9 @@ See `scripts/setup-android.sh` for the initial setup script.
 |--------|---------|
 | `dev` | Vite dev server (host: true, port 5173) |
 | `build` | Generate icons → tsc → vite build |
-| `build:web` | Same + `VITE_ROUTER_BASE=/expense-tracker` |
+| `build:web` | Same + `VITE_ROUTER_BASE=/kaikanakku` |
+| `build:cap` | Build for Capacitor, no PWA |
+| `build:android` | Build + sync + regenerate Android assets + assemble debug APK |
 | `preview` | Vite preview |
 | `cap:add:android` | `npx cap add android` |
 | `cap:sync` | Build + cap sync |
@@ -203,8 +213,9 @@ See `scripts/setup-android.sh` for the initial setup script.
 
 - TypeScript strict mode, `noUnusedLocals: false`, `noUnusedParameters: false`
 - Tailwind `darkMode: 'class'` with CSS-variable semantic tokens (`canvas`, `surface`, `label`, `tertiary`, `separator`, `accent`, `danger`, `success`)
+- App is always dark; there is no light mode toggle
 - `base: './'` in Vite (relative asset paths — required for Capacitor)
-- UI: Apple HIG-style dark-first with true-black page background, elevated surfaces, rounded-2xl cards, accent-blue CTA
+- UI: KaiKanakku dark-first with deep-teal page background, elevated surfaces, rounded-2xl cards, teal→cyan gradient CTAs
 - Category avatars use color-tinted letter initials (emoji icons are legacy)
 - Import aliases: none configured (no `@/` or `~` paths — all relative)
 - No linter/formatter configured in project (no eslint/prettier)

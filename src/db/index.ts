@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Transaction, Category } from '../types';
 import { matchesMerchant } from '../utils/categories';
+import { theme } from '../theme';
 
 export class ExpenseDB extends Dexie {
   transactions!: Table<Transaction, number>;
@@ -200,19 +201,19 @@ function getDatesInRange(start: string, end: string): string[] {
 export const db = new ExpenseDB();
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  { name: 'Food & Dining', icon: 'food', color: '#f97316' },
+  { name: 'Food & Dining', icon: 'food', color: '#f59e0b' },
   { name: 'Shopping', icon: 'shopping', color: '#ec4899' },
-  { name: 'Transport', icon: 'transport', color: '#3b82f6' },
-  { name: 'Bills & Utilities', icon: 'bills', color: '#6366f1' },
-  { name: 'Entertainment', icon: 'entertainment', color: '#8b5cf6' },
-  { name: 'Groceries', icon: 'groceries', color: '#22c55e' },
-  { name: 'Healthcare', icon: 'healthcare', color: '#ef4444' },
-  { name: 'Education', icon: 'education', color: '#06b6d4' },
-  { name: 'Travel', icon: 'travel', color: '#14b8a6' },
-  { name: 'Rent', icon: 'rent', color: '#78716c' },
-  { name: 'Investment', icon: 'investment', color: '#a855f7' },
-  { name: 'Salary', icon: 'salary', color: '#22c55e' },
+  { name: 'Transport', icon: 'transport', color: '#38bdf8' },
+  { name: 'Bills & Utilities', icon: 'bills', color: theme.accent.hex },
+  { name: 'Entertainment', icon: 'entertainment', color: '#818cf8' },
+  { name: 'Groceries', icon: 'groceries', color: '#4ade80' },
+  { name: 'Healthcare', icon: 'healthcare', color: '#fb7185' },
+  { name: 'Education', icon: 'education', color: '#a3ff9a' },
+  { name: 'Travel', icon: 'travel', color: '#fbbf24' },
+  { name: 'Rent', icon: 'rent', color: '#94a3b8' },
+  { name: 'Investment', icon: 'investment', color: '#a78bfa' },
+  { name: 'Salary', icon: 'salary', color: theme.income.hex },
   { name: 'Freelance', icon: 'freelance', color: '#0ea5e9' },
-  { name: 'Cash', icon: 'cash', color: '#10b981' },
+  { name: 'Cash', icon: 'cash', color: theme.warning.hex },
   { name: 'Other', icon: 'other', color: '#64748b' },
 ];

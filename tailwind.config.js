@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+// Theme source of truth: src/theme.ts — update that file first, then mirror changes here.
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -18,6 +19,7 @@ export default {
         accent: {
           DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
           soft: 'rgb(var(--accent-soft) / <alpha-value>)',
+          glow: 'rgb(var(--accent-glow) / <alpha-value>)',
         },
         danger: {
           DEFAULT: 'rgb(var(--danger) / <alpha-value>)',
@@ -29,9 +31,12 @@ export default {
         },
         warning: 'rgb(var(--warning) / <alpha-value>)',
         ring: 'rgb(var(--ring) / <alpha-value>)',
-        primary: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81', 950: '#1e1b4b' },
+        lime: { DEFAULT: '#e3f675', 50: '#f0fff0', 100: '#d9ffd6', 200: '#b3ffae', 300: '#99ff91', 400: '#e3f675', 500: '#6be060', 600: '#55c24b', 700: '#3a8532', 800: '#1f471b', 900: '#122a10', 950: '#0a1908' },
+        mint: { DEFAULT: '#e3f675', 50: '#f0fff0', 100: '#d9ffd6', 200: '#b3ffae', 300: '#99ff91', 400: '#e3f675', 500: '#6be060', 600: '#55c24b', 700: '#3a8532', 800: '#1f471b', 900: '#122a10', 950: '#0a1908' },
+        cyan: { 400: '#e3f675', 500: '#6be060' },
+        primary: { 50: '#f0fff0', 100: '#d9ffd6', 200: '#b3ffae', 300: '#99ff91', 400: '#e3f675', 500: '#6be060', 600: '#55c24b', 700: '#3a8532', 800: '#1f471b', 900: '#122a10', 950: '#0a1908' },
         expense: { 400: '#f87171', 500: '#ef4444', 600: '#dc2626' },
-        income: { 400: '#4ade80', 500: '#22c55e', 600: '#16a34a' },
+        income: { 400: '#a3ff9a', 500: '#83f774', 600: '#6be060' },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -45,6 +50,10 @@ export default {
       },
       boxShadow: {
         card: 'var(--shadow)',
+      },
+      backgroundImage: {
+        'kk-gradient': 'linear-gradient(135deg, #0a1f0a 0%, #0a0f0a 100%)',
+        'kk-glow': 'radial-gradient(ellipse at 50% 0%, rgba(128, 247, 116, 0.12) 0%, transparent 60%)',
       },
     },
   },
