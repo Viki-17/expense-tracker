@@ -1,8 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#0a0f0a"/>
-  <circle cx="16" cy="16" r="14" fill="#e3f675" opacity="0.12"/>
-  <g fill="#e3f675">
-    <path d="M9 11h14v2H9z"/>
-    <path d="M9 11l5 6h8v2H15l7 9h-3l-9 -11v-2h9v-2H9z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#050805"/>
+  <circle cx="32" cy="30" r="24" fill="#e3f675" opacity="0.12"/>
+  <!-- Bag silhouette with lime stroke -->
+  <path d="M22,24 C22,18 26,14 32,14 C38,14 42,18 42,24 C42,27 46,31 48,36 C50,42 46,48 32,48 C18,48 14,42 16,36 C18,31 22,27 22,24 Z" fill="#1f2a18" stroke="#e3f675" stroke-width="2.5"/>
+  <!-- Cinched neck -->
+  <path d="M24,15 C28,17 36,17 40,15 Z" fill="#2f3d26"/>
+  <!-- Gold rope -->
+  <path d="M22,25 C27,27 37,27 42,25" stroke="#e8d49a" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Lime vector rupee -->
+  <g transform="translate(32 28) scale(0.23)" fill="#f0ffa0">
+    
+  <!-- Top bar -->
+  <rect x="-32" y="-40" width="64" height="12" rx="2"/>
+  <!-- Middle bar -->
+  <rect x="-32" y="-14" width="44" height="10" rx="2"/>
+  <!-- Diagonal stroke with the curved tail as one continuous filled path -->
+  <path d="M -32,-40 L -20,-40 L 26,40 Q 34,40 42,48 Q 48,55 48,64 L 48,76 L 34,76 Q 28,64 18,48 L -32,-10 Z"/>
   </g>
+  <!-- Supporting hand base -->
+  <path d="M14,52 C22,50 42,50 50,52" stroke="#ffffff" stroke-width="4" stroke-linecap="round" fill="none"/>
 </svg>

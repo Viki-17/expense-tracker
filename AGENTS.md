@@ -51,7 +51,8 @@
 ├── src/theme-init.ts         # Applies initial dark theme before React render
 ├── src/contexts/ThemeProvider.tsx
 ├── scripts/
-│   ├── generate-icons.mjs    # sharp-based PNG icon generator from SVG
+│   ├── generate-svgs.mjs       # Programmatic SVG brand-mark generator (source of truth for icon/splash/favicon SVGs)
+│   ├── generate-icons.mjs      # sharp-based PNG icon generator (icon.svg → icon-192/512.png)
 │   ├── generate-android-assets.mjs # sharp-based Android launcher + splash generator
 │   └── setup-android.sh      # One-time Android project setup script
 ├── public/
@@ -199,7 +200,9 @@ See `scripts/setup-android.sh` for the initial setup script.
 | Script | Purpose |
 |--------|---------|
 | `dev` | Vite dev server (host: true, port 5173) |
-| `build` | Generate icons → tsc → vite build |
+| `generate-svgs` | Regenerate brand SVGs (favicon/icon/icon-foreground/splash) into `public/` |
+| `generate-icons` | Render `public/icon.svg` → `icon-192/512.png` |
+| `build` | Generate SVGs → PNGs → tsc → vite build |
 | `build:web` | Same + `VITE_ROUTER_BASE=/kaikanakku` |
 | `build:cap` | Build for Capacitor, no PWA |
 | `build:android` | Build + sync + regenerate Android assets + assemble debug APK |
