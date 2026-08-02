@@ -176,6 +176,8 @@ export function parseSMS(message: string): SMSResult | null {
     /\b(?:click|tap)\s+here\b/i,
     /\blucky\s+draw\b/i,
     /\b(?:earn|get|win|avail)\s+(?:flat\s+)?(?:Rs\.?|INR)?\s*[\d,]+\s*(?:cashback|reward)/i,
+    /\bGet\s+(?:Rs\.?|INR)?\s*[\d,]+\s+(?:[Oo]ff|[Dd]iscount)/,
+    /\bGet\s+up\s+to\s+\d+%\s+(?:[Oo]ff|[Dd]iscount)/,
     /\bcashback\s+on\s+your\b/i,
     /\b(?:offer|promo)\s+(?:ends|valid|today)/i,
     /\bapply\s+now\b/i,
@@ -189,6 +191,14 @@ export function parseSMS(message: string): SMSResult | null {
     /\bupdate\s+your\s+(?:kyc|pan|aadhaar)\b/i,
     /\bstatement\s+(?:is\s+(?:sent|generated|ready|issued|prepared)|was\s+(?:sent|generated|ready|issued|prepared))\b/i,
     /\btotal\s+(?:of|amount)?\s*(?:Rs\.?|INR)?\s*[\d,]+.*?(?:or\s+minimum|due\s+by)\b/i,
+    /Recharge\s+(?:Rs\.?|INR)?\s*[\d,]+[\s,]+(?:offers?|Get\b|Unlimited)/i,
+    /\bBook\s+(?:a|an|your|the|now|today)\b/i,
+    /\b(?:Special|Exclusive)\s+[Oo]ffer/i,
+    /\bUse\s+[Cc]ode\s*:/i,
+    /\bMRP\s+(?:Rs\.?|INR)?\s*[\d,]+/i,
+    /\b(?:EOSS|Clearance|Sale)\s+[Aa]lert/i,
+    /\byour\s+next\s+(?:booking|purchase|recharge|order|trip)/i,
+    /\b(?:earn|get|win|avail)\s+(?:up\s+to\s+)?\d+%/i,
   ];
 
   if (NON_TXN_PATTERNS.some((p) => p.test(cleaned))) {
@@ -374,21 +384,73 @@ export function parseSMS(message: string): SMSResult | null {
   }
 
   // Extract date
-  const datePatterns = [
-    /(?:on|dated?|date|as\s*of)\s*(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})/i,
-    /(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})/,
-    /(\d{2}[-/\.][A-Za-z]{3}[-/\.]\d{2,4})/i,
+  // Strip trailing timestamps (e.g. "15:36:12", "15:36", "15:36 PM") before matching
+  const dateSource = cleaned.replace(/\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?\s*$/i, '').trim();
+
+  const MONTH_ABBR = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
+  const MONTH_FULL = '(?:January|February|March|April|June|July|August|September|October|November|December)';
+
+  // Phase 1: Prefixed dates — word boundary on prefix to avoid "Updated 1.2.25"
+  const prefixedPatterns: RegExp[] = [
+    /\bon\s+(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})\b/i,
+    /\bdated?\b\s+(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})\b/i,
+    /\bas\s+of\s+(\d{1,2}[-/\.]\d{1,2}[-/\.]\d{2,4})\b/i,
   ];
 
-  let date = new Date().toISOString().split('T')[0];
-  for (const pattern of datePatterns) {
-    const match = cleaned.match(pattern);
+  const today = new Date().toISOString().split('T')[0];
+  let date = today;
+  let dateFound = false;
+
+  for (const pattern of prefixedPatterns) {
+    const match = dateSource.match(pattern);
     if (match) {
       const parsed = parseDate(match[1]);
-      if (parsed) {
-        date = parsed;
-        confidence += 10;
-        break;
+      if (parsed) { date = parsed; dateFound = true; confidence += 10; break; }
+    }
+  }
+
+  // Phase 2: Month-name dates (abbreviated + full, with or without separators, US-style inclusive)
+  if (!dateFound) {
+    const monthNamePatterns: RegExp[] = [
+      // DD-Mon-YYYY or DD/Mon/YYYY (single-digit day OK now)
+      new RegExp(`\\b(\\d{1,2})[-/\\.]${MONTH_ABBR}[-/\\.](\\d{2,4})\\b`, 'i'),
+      // DD Mon YYYY (space-separated, abbreviated)
+      new RegExp(`\\b(\\d{1,2})\\s+${MONTH_ABBR}\\s+(\\d{2,4})\\b`, 'i'),
+      // DD Month YYYY (full name, space-separated)
+      new RegExp(`\\b(\\d{1,2})\\s+${MONTH_FULL}\\s+(\\d{2,4})\\b`, 'i'),
+      // DD-Month-YYYY (full name, dash-separated)
+      new RegExp(`\\b(\\d{1,2})[-/\\.]${MONTH_FULL}[-/\\.](\\d{2,4})\\b`, 'i'),
+      // Mon DD, YYYY (US-style with optional comma)
+      new RegExp(`\\b${MONTH_ABBR}\\s+(\\d{1,2}),?\\s+(\\d{2,4})\\b`, 'i'),
+    ];
+
+    for (const pattern of monthNamePatterns) {
+      const match = dateSource.match(pattern);
+      if (match) {
+        const parsed = parseDate(match[0]);
+        if (parsed) { date = parsed; dateFound = true; confidence += 10; break; }
+      }
+    }
+  }
+
+  // Phase 3: Bare numeric date (last resort — pick match closest to end of message)
+  if (!dateFound) {
+    const barePattern = /(\d{1,2})[-/\.](\d{1,2})[-/\.](\d{2,4})\b/g;
+    const candidates: { index: number; dateStr: string }[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = barePattern.exec(dateSource)) !== null) {
+      // Skip if immediately preceded by currency (amount, not date)
+      if (/(?:Rs\.?|INR|USD)\s*$/i.test(dateSource.substring(0, m.index))) continue;
+      // Skip if first part > 31 (unlikely to be a day — could be an amount like 100.50.25)
+      if (parseInt(m[1]) > 31) continue;
+      candidates.push({ index: m.index, dateStr: m[0] });
+    }
+    if (candidates.length > 0) {
+      // Prefer candidate closest to end of message (transaction dates tend to be at the end)
+      candidates.sort((a, b) => b.index - a.index);
+      for (const c of candidates) {
+        const parsed = parseDate(c.dateStr);
+        if (parsed) { date = parsed; dateFound = true; confidence += 10; break; }
       }
     }
   }
@@ -407,39 +469,66 @@ export function parseSMS(message: string): SMSResult | null {
 
 function parseDate(dateStr: string): string | null {
   try {
-    const cleaned = dateStr.replace(/[\/-]/g, '-');
+    // Normalize: commas → spaces, slashes/dots → dashes, collapse spaces → dashes
+    let cleaned = dateStr.replace(/[,]/g, ' ').replace(/[/.]+/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-');
     const parts = cleaned.split('-');
 
-    if (parts.length === 3) {
-      let day: number, month: number, year: number;
+    if (parts.length !== 3) return null;
 
-      if (parts[0].length === 4) {
-        year = parseInt(parts[0]);
-        month = parseInt(parts[1]);
-        day = parseInt(parts[2]);
-      } else {
-        day = parseInt(parts[0]);
-        month = isNaN(parseInt(parts[1])) ? getMonthNumber(parts[1]) : parseInt(parts[1]);
-        year = parseInt(parts[2]);
-      }
+    let day: number, month: number, year: number;
 
-      if (year < 100) year += 2000;
-      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-
-      return formatLocalDate(year, month, day);
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD
+      year = parseInt(parts[0]);
+      month = parseInt(parts[1]);
+      day = parseInt(parts[2]);
+    } else if (!isNaN(parseInt(parts[0]))) {
+      // DD-MM-YYYY or DD-Mon-YYYY
+      day = parseInt(parts[0]);
+      month = isNaN(parseInt(parts[1])) ? getMonthNumber(parts[1]) : parseInt(parts[1]);
+      year = parseInt(parts[2]);
+    } else {
+      // Mon DD YYYY (US-style)
+      month = getMonthNumber(parts[0]);
+      day = parseInt(parts[1]);
+      year = parseInt(parts[2]);
     }
+
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+    if (year < 100) year += 2000;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+    // Validate with Date() to catch impossible dates (Feb 31, Apr 31, etc.)
+    const d = new Date(year, month - 1, day);
+    if (d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+
+    // Mild future-date guard: reject dates more than 1 day in the future
+    const oneDayFromNow = new Date();
+    oneDayFromNow.setDate(oneDayFromNow.getDate() + 1);
+    if (d > oneDayFromNow) return null;
+
+    return formatLocalDate(year, month, day);
   } catch {
     return null;
   }
-  return null;
 }
 
 function getMonthNumber(month: string): number {
   const months: Record<string, number> = {
-    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
-    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+    jan: 1, january: 1,
+    feb: 2, february: 2,
+    mar: 3, march: 3,
+    apr: 4, april: 4,
+    may: 5,
+    jun: 6, june: 6,
+    jul: 7, july: 7,
+    aug: 8, august: 8,
+    sep: 9, september: 9,
+    oct: 10, october: 10,
+    nov: 11, november: 11,
+    dec: 12, december: 12,
   };
-  return months[month.toLowerCase()] || 1;
+  return months[month.toLowerCase()] ?? NaN;
 }
 
 export function parseMultipleSMS(messages: string[]): SMSResult[] {
