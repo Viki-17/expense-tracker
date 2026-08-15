@@ -32,7 +32,7 @@
     "build": "node scripts/generate-svgs.mjs && node scripts/generate-icons.mjs && tsc -b && vite build",
     "build:web": "export VITE_ROUTER_BASE=/kaikanakku && node scripts/generate-svgs.mjs && node scripts/generate-icons.mjs && tsc -b && vite build",
     "build:cap": "export VITE_NO_PWA=true && node scripts/generate-svgs.mjs && node scripts/generate-icons.mjs && tsc -b && vite build",
-    "build:android": "npm run cap:sync && node scripts/generate-android-assets.mjs && cd android && ./gradlew clean assembleDebug",
+    "build:android": "npm run cap:sync && node scripts/generate-android-assets.mjs && cd android && ./gradlew clean assembleRelease",
     "preview": "vite preview",
     "preview:web": "export VITE_BASE=/kaikanakku/ && vite preview",
     "cap:init": "npx cap init",
