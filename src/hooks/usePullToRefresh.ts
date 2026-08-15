@@ -25,8 +25,10 @@ export function usePullToRefresh(
   const [refreshing, setRefreshing] = useState(false);
 
   const startY = useRef(0);
+  const startX = useRef(0);
   const scrollEl = useRef<HTMLElement | null>(null);
   const isAtTop = useRef(false);
+  const isPulling = useRef(false);
   const currentPull = useRef(0);
 
   const onRefreshRef = useRef(onRefresh);
@@ -34,7 +36,16 @@ export function usePullToRefresh(
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (e.touches.length !== 1) return;
+    if (
+      e.target instanceof Element &&
+      e.target.closest('button, a, input, textarea, select, [role="button"]')
+    ) {
+      isAtTop.current = false;
+      return;
+    }
+    startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
+    isPulling.current = false;
     currentPull.current = 0;
     setPullDistance(0);
 
@@ -46,8 +57,12 @@ export function usePullToRefresh(
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isAtTop.current) return;
+    const dx = e.touches[0].clientX - startX.current;
     const dy = e.touches[0].clientY - startY.current;
-    if (dy > 10) {
+    if (Math.abs(dx) > Math.abs(dy) || dy <= 16) return;
+
+    isPulling.current = true;
+    if (dy > 16) {
       currentPull.current = Math.min(dy * 0.5, 120);
       setPullDistance(currentPull.current);
       e.preventDefault();
@@ -55,10 +70,11 @@ export function usePullToRefresh(
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    if (currentPull.current >= threshold && isAtTop.current) {
+    if (isPulling.current && currentPull.current >= threshold && isAtTop.current) {
       setRefreshing(true);
       onRefreshRef.current?.();
     }
+    isPulling.current = false;
     currentPull.current = 0;
     setPullDistance(0);
   }, [threshold]);

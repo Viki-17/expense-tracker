@@ -13,12 +13,13 @@ const sizes = {
   lg: 'w-11 h-11',
 };
 
-export function IconButton({ children, label, size = 'md', className = '', ...rest }: IconButtonProps) {
+export function IconButton({ children, label, size = 'md', className = '', type = 'button', ...rest }: IconButtonProps) {
   return (
     <button
       {...rest}
+      type={type}
       aria-label={label}
-      className={`tap flex items-center justify-center rounded-full bg-surface-2 text-label hover:bg-surface-3 active:scale-90 transition-all duration-150 ${sizes[size]} ${className}`}
+      className={`tap flex items-center justify-center rounded-full bg-surface-2/80 border border-separator/40 text-label hover:bg-surface-3 active:scale-90 transition-all duration-150 ${sizes[size]} ${className}`}
     >
       {children}
     </button>

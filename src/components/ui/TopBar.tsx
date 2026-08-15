@@ -16,16 +16,16 @@ export function TopBar({ title, subtitle, leading, trailing, sticky = true, bord
   const inlineStyle: React.CSSProperties = top > 0 ? { paddingTop: top + 8 } : {};
   return (
     <header
-      className={`safe-top bg-canvas/80 backdrop-blur-xl ${
-        borderless ? '' : 'border-b border-separator/60'
-      } ${sticky ? 'sticky top-0 z-30' : ''}`}
+      className={`safe-top -mx-4 -mt-4 px-4 pt-4 overflow-hidden rounded-b-[2rem] bg-canvas/90 backdrop-blur-xl ${
+        borderless ? '' : 'border-b border-separator/40'
+      } ${sticky ? 'sticky top-0 z-30' : ''} lg:-mx-12 lg:-mt-10 lg:px-12 lg:pt-10`}
       style={inlineStyle}
     >
-      <div className="flex items-center gap-3 px-4 pb-3">
+      <div className="flex items-center gap-3 px-0 pb-5 lg:px-0">
         {leading}
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-label truncate leading-tight">{title}</h1>
-          {subtitle && <p className="text-xs text-tertiary truncate mt-0.5">{subtitle}</p>}
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-[-0.045em] text-label truncate leading-tight">{title}</h1>
+          {subtitle && <p className="text-sm text-secondary truncate mt-1">{subtitle}</p>}
         </div>
         {trailing}
       </div>

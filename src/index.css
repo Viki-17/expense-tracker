@@ -34,23 +34,23 @@
      * To change the theme, update src/theme.ts first,
      * then mirror the `rgb` values here.
      */
-    --canvas: 10 15 10;
-    --surface: 18 26 18;
-    --surface-2: 26 36 26;
-    --surface-3: 36 48 36;
-    --label: 245 255 242;
-    --secondary: 154 176 147;
-    --tertiary: 106 122 96;
-    --separator: 36 48 36;
+    --canvas: 35 40 22;
+    --surface: 9 11 7;
+    --surface-2: 24 28 16;
+    --surface-3: 48 54 28;
+    --label: 248 250 231;
+    --secondary: 192 199 153;
+    --tertiary: 132 141 94;
+    --separator: 71 78 43;
     --accent: 227 246 117;
-    --accent-soft: 26 58 22;
+    --accent-soft: 63 75 22;
     --accent-glow: 240 255 160;
-    --danger: 255 107 107;
+    --danger: 211 119 111;
     --success: 131 247 116;
     --warning: 250 204 21;
-    --danger-soft: 80 35 35;
-    --success-soft: 26 58 22;
-    --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    --danger-soft: 60 34 31;
+    --success-soft: 63 75 22;
+    --shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
     --ring: 227 246 117;
   }
 }
@@ -61,11 +61,14 @@
 
   .card {
     background-color: rgb(var(--surface));
-    border-radius: 1rem;
+    border: 1px solid rgb(var(--separator) / 0.35);
+    border-radius: 1.5rem;
+    box-shadow: var(--shadow);
   }
   .cardInset {
     background-color: rgb(var(--surface-2));
-    border-radius: 0.875rem;
+    border: 1px solid rgb(var(--separator) / 0.28);
+    border-radius: 1.125rem;
   }
   .tap {
     transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -90,6 +93,15 @@
       linear-gradient(to right, rgb(227 246 117 / 0.04) 1px, transparent 1px),
       linear-gradient(to bottom, rgb(227 246 117 / 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+  .ambient-panel {
+    background:
+      radial-gradient(circle at 50% 35%, rgb(var(--accent) / 0.14), transparent 48%),
+      linear-gradient(145deg, rgb(var(--surface) / 0.98), rgb(5 7 4 / 0.98));
+  }
+  .display-number {
+    letter-spacing: -0.065em;
+    font-variant-numeric: tabular-nums;
   }
   .text-on-accent {
     color: #0a0a00;

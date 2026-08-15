@@ -42,6 +42,7 @@ function GroupBarChartBase({ data, selectedMonth, onSelect }: GroupBarChartProps
           return (
             <button
               key={d.month}
+              type="button"
               ref={active ? selectedRef : undefined}
               onClick={() => onSelect(d.month)}
               className="tap flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-xl transition-colors min-w-[52px] active:scale-95"

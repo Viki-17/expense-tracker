@@ -26,6 +26,7 @@ import { EmptyState } from './ui/EmptyState';
 import { MonthBarChart } from './ui/MonthBarChart';
 import { CategoryDonutChart } from './ui/CategoryDonutChart';
 import { TransactionDetailModal } from './TransactionDetailModal';
+import { Skeleton } from './ui/Skeleton';
 import { ChevronDownIcon, CogIcon, PlusCircleIcon, WalletIcon, CategoryIcon } from './Icons';
 
 type TabKey = 'transactions' | 'categories' | 'merchants';
@@ -44,7 +45,9 @@ export default function Dashboard() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const monthlyTotals = useLiveQuery(() => db.getMonthlyTotals(90), []) || [];
+  const monthlyTotalsQuery = useLiveQuery(() => db.getMonthlyTotals(90), []);
+  const monthlyTotals = monthlyTotalsQuery || [];
+  const monthlyTotalsLoading = monthlyTotalsQuery === undefined;
 
   useEffect(() => {
     sessionStorage.setItem('dashboardTab', tab);
@@ -64,7 +67,7 @@ export default function Dashboard() {
     const lastDay = new Date(y, m, 0).getDate();
     return `${selectedMonth}-${String(lastDay).padStart(2, '0')}`;
   }, [selectedMonth]);
-  const { transactions, deleteTransaction, updateTransaction } = useTransactions(start, end);
+  const { transactions, loading: transactionsLoading, deleteTransaction, updateTransaction } = useTransactions(start, end);
 
   const handleSelectMonth = useCallback((month: string) => {
     setSelectedMonth(month);
@@ -143,15 +146,22 @@ export default function Dashboard() {
   );
 
   const currentIdx = TAB_ORDER.indexOf(tab);
+  const [tabDirection, setTabDirection] = useState(1);
+
+  const changeTab = useCallback((nextTab: TabKey) => {
+    const nextIdx = TAB_ORDER.indexOf(nextTab);
+    setTabDirection(nextIdx >= currentIdx ? 1 : -1);
+    setTab(nextTab);
+  }, [currentIdx]);
 
   const handleSwipeLeft = useCallback(() => {
     if (currentIdx < TAB_ORDER.length - 1)
-      setTab(TAB_ORDER[currentIdx + 1]);
-  }, [currentIdx]);
+      changeTab(TAB_ORDER[currentIdx + 1]);
+  }, [changeTab, currentIdx]);
 
   const handleSwipeRight = useCallback(() => {
-    if (currentIdx > 0) setTab(TAB_ORDER[currentIdx - 1]);
-  }, [currentIdx]);
+    if (currentIdx > 0) changeTab(TAB_ORDER[currentIdx - 1]);
+  }, [changeTab, currentIdx]);
 
   const swipeRef = useSwipe({
     onSwipeLeft: handleSwipeLeft,
@@ -281,7 +291,7 @@ export default function Dashboard() {
         }
       />
 
-      <div className="px-3 w-full lg:max-w-2xl lg:mx-auto">
+      <div className="w-full lg:max-w-2xl lg:mx-auto">
         <AnimatePresence initial={false}>
           {chartOpen && (
             <motion.div
@@ -293,19 +303,27 @@ export default function Dashboard() {
               className="overflow-hidden"
             >
               <div className="pt-3 pb-1">
-                <MonthBarChart
-                  data={monthlyTotals}
-                  selectedMonth={selectedMonth}
-                  onSelect={handleSelectMonth}
-                />
+                  {monthlyTotalsLoading ? (
+                    <div className="h-[88px] flex items-end gap-2 px-2 pb-2">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <Skeleton key={i} className="flex-1 rounded-t-md rounded-b-none" style={{ height: `${28 + (i % 4) * 12}px` }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <MonthBarChart
+                      data={monthlyTotals}
+                      selectedMonth={selectedMonth}
+                      onSelect={handleSelectMonth}
+                    />
+                  )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Tabs */}
-        <div className="border-b border-separator/60 mb-2 -mx-3 px-3 sticky top-0 bg-canvas/90 backdrop-blur-xl z-20">
-          <Tabs tabs={tabs} value={tab} onChange={setTab} />
+        <div className="mt-3 mb-4">
+          <Tabs tabs={tabs} value={tab} onChange={changeTab} variant="pill" layoutId="dashboard-tabs" className="w-full grid grid-cols-3" />
         </div>
 
         {pullDistance > 0 && (
@@ -320,17 +338,19 @@ export default function Dashboard() {
           </div>
         )}
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout" initial={false} custom={tabDirection}>
           <motion.div
             key={tab}
-            initial={{ opacity: 0, x: 8 }}
+            custom={tabDirection}
+            initial={{ opacity: 0, x: tabDirection * 7 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.1, ease: [0.25, 0.8, 0.25, 1] }}
+            exit={{ opacity: 0, x: tabDirection * -5 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === 'transactions' && (
               <TransactionsTab
                 rows={rows}
+                loading={transactionsLoading}
                 total={transactions.length}
                 spent={stats.expense}
                 income={stats.income}
@@ -353,6 +373,7 @@ export default function Dashboard() {
                 categoryCounts={stats.countMap}
                 onCategoryBudget={goToBudgets}
                 empty={transactions.length === 0}
+                loading={transactionsLoading}
               />
             )}
 
@@ -360,6 +381,7 @@ export default function Dashboard() {
               <MerchantsTab
                 merchants={merchants}
                 onAdd={goToAdd}
+                loading={transactionsLoading}
               />
             )}
           </motion.div>
@@ -380,6 +402,7 @@ export default function Dashboard() {
 /* ───────── Transactions Tab ───────── */
 interface TransactionsTabProps {
   rows: import('../types').Transaction[];
+  loading: boolean;
   total: number;
   spent: number;
   income: number;
@@ -395,6 +418,7 @@ interface TransactionsTabProps {
 
 function TransactionsTab({
   rows,
+  loading,
   total,
   spent,
   income,
@@ -408,6 +432,8 @@ function TransactionsTab({
   onBudget,
 }: TransactionsTabProps) {
   const [selectedTransaction, setSelectedTransaction] = useState<import('../types').Transaction | null>(null);
+
+  if (loading) return <TransactionsLoadingSkeleton />;
 
   const list = (
     <div className="space-y-2">
@@ -438,7 +464,7 @@ function TransactionsTab({
   if (rows.length === 0) {
     return (
       <div className="space-y-4">
-        <Card className="flex flex-col items-center gap-2">
+        <Card className="ambient-panel relative overflow-hidden flex flex-col items-center gap-2 py-7">
           <SpendRing spent={spent} budget={budget} />
           <div className="grid grid-cols-2 gap-3 w-full mt-1">
             <div className="flex flex-col items-center">
@@ -485,7 +511,7 @@ function TransactionsTab({
 
   return (
     <div className="space-y-4">
-      <Card className="flex flex-col items-center gap-2">
+      <Card className="ambient-panel relative overflow-hidden flex flex-col items-center gap-2 py-7">
         <SpendRing spent={spent} budget={budget} />
         <div className="grid grid-cols-2 gap-3 w-full mt-1">
           <div className="flex flex-col items-center">
@@ -530,6 +556,7 @@ function TransactionsTab({
 /* ───────── Categories Tab ───────── */
 interface CategoriesTabProps {
   sortedBreakdown: [string, number][];
+  loading: boolean;
   totalExpense: number;
   getCategory: (name: string) => import('../types').Category | undefined;
   categoryCounts: Map<string, number>;
@@ -539,6 +566,7 @@ interface CategoriesTabProps {
 
 function CategoriesTab({
   sortedBreakdown,
+  loading,
   totalExpense,
   getCategory,
   categoryCounts,
@@ -564,6 +592,8 @@ function CategoriesTab({
     (name: string) => navigate(`/category/${encodeURIComponent(name)}`),
     [navigate]
   );
+
+  if (loading) return <CategoriesLoadingSkeleton />;
 
   if (empty || sortedBreakdown.length === 0) {
     return (
@@ -650,9 +680,10 @@ function CategoriesTab({
 interface MerchantsTabProps {
   merchants: { name: string; total: number; count: number }[];
   onAdd: () => void;
+  loading: boolean;
 }
 
-function MerchantsTab({ merchants, onAdd }: MerchantsTabProps) {
+function MerchantsTab({ merchants, onAdd, loading }: MerchantsTabProps) {
   const navigate = useNavigate();
 
   const maxAmt = useMemo(
@@ -664,6 +695,8 @@ function MerchantsTab({ merchants, onAdd }: MerchantsTabProps) {
     (name: string) => navigate(`/merchant/${encodeURIComponent(name)}`),
     [navigate]
   );
+
+  if (loading) return <MerchantsLoadingSkeleton />;
 
   if (merchants.length === 0) {
     return (
@@ -723,6 +756,77 @@ function MerchantsTab({ merchants, onAdd }: MerchantsTabProps) {
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+function TransactionsLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Card className="ambient-panel relative overflow-hidden flex flex-col items-center gap-2 py-7">
+        <Skeleton className="w-[180px] h-[180px] rounded-full" />
+        <div className="grid grid-cols-2 gap-3 w-full mt-1">
+          <Skeleton className="h-9 w-20" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+      </Card>
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Card key={i} padded={false} className="px-3 py-1">
+            <div className="flex items-center gap-3 h-[60px]">
+              <Skeleton className="w-11 h-11 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/5" />
+                <Skeleton className="h-3 w-2/5" />
+              </div>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CategoriesLoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Card className="min-h-[192px] flex items-center justify-center">
+        <Skeleton className="w-40 h-40 rounded-full" />
+      </Card>
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Card key={i} padded={false} className="px-3 py-2.5">
+            <div className="flex items-center gap-3 h-11">
+              <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-3/5" />
+                <Skeleton className="h-3 w-2/5" />
+              </div>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MerchantsLoadingSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} padded={false} className="px-3 py-2.5">
+          <div className="flex items-center gap-3 h-11">
+            <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-2/5" />
+              <Skeleton className="h-1.5 w-full" />
+            </div>
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

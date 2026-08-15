@@ -363,7 +363,7 @@ export default function SmartSMSReader() {
   return (
     <div className="space-y-4" ref={smsRef}>
       <TopBar title="SMS Import" subtitle="Scan bank & UPI messages" />
-      <div className="px-4 max-w-2xl mx-auto w-full space-y-4">
+      <div className="max-w-none lg:max-w-3xl lg:mx-auto w-full space-y-4">
       {pullDistance > 0 && (
         <div className="flex items-center justify-center py-2">
           <div

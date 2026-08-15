@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../db';
 import { useCategories } from '../hooks/useCategories';
 import { useSwipe } from '../hooks/useSwipe';
@@ -13,6 +12,7 @@ import { TransactionRow } from './ui/TransactionRow';
 import { Avatar } from './ui/Avatar';
 import { EmptyState } from './ui/EmptyState';
 import { GroupBarChart } from './ui/GroupBarChart';
+import { Skeleton } from './ui/Skeleton';
 import { TransactionDetailModal } from './TransactionDetailModal';
 import { ArrowLeftIcon, WalletIcon, CategoryIcon } from './Icons';
 import type { Transaction } from '../types';
@@ -58,13 +58,17 @@ export default function GroupDetail({ type }: GroupDetailProps) {
     [decoded, type]
   );
 
-  const transactions = useLiveQuery(
+  const transactionsQuery = useLiveQuery(
     () =>
       type === 'category'
         ? db.getCategoryTransactionsInRange(decoded, start, end)
         : db.getMerchantTransactionsInRange(decoded, start, end),
     [decoded, type, start, end]
   );
+
+  const txPrevRef = useRef<Transaction[] | null>(null);
+  if (transactionsQuery !== undefined) txPrevRef.current = transactionsQuery;
+  const txList = transactionsQuery ?? txPrevRef.current ?? [];
 
   const category = useMemo(
     () => (type === 'category' ? getCategory(decoded) : undefined),
@@ -103,7 +107,7 @@ export default function GroupDetail({ type }: GroupDetailProps) {
     );
   }, [selectedMonth]);
 
-  const swipeHandlers = useSwipe({
+  const swipeRef = useSwipe({
     onSwipeLeft: handleNextMonth,
     onSwipeRight: handlePrevMonth,
   });
@@ -111,11 +115,6 @@ export default function GroupDetail({ type }: GroupDetailProps) {
   const chartData = useMemo(
     () => monthlyTotals || [],
     [monthlyTotals]
-  );
-
-  const txList = useMemo(
-    () => transactions || [],
-    [transactions]
   );
 
   const selectedDate = useMemo(() => {
@@ -139,9 +138,10 @@ export default function GroupDetail({ type }: GroupDetailProps) {
   );
 
   const chartLoading = monthlyTotals === undefined;
+  const transactionsLoading = txPrevRef.current === null && transactionsQuery === undefined;
 
   return (
-    <div>
+    <div ref={swipeRef} style={{ touchAction: 'pan-y' }}>
       <TopBar
         leading={
           <button
@@ -161,13 +161,12 @@ export default function GroupDetail({ type }: GroupDetailProps) {
         }
       />
 
-      <div
-        className="px-3 w-full lg:max-w-2xl lg:mx-auto"
-        {...swipeHandlers}
-      >
+      <div className="w-full lg:max-w-2xl lg:mx-auto">
         {chartLoading && (
-          <div className="py-6 flex items-center justify-center">
-            <div className="w-5 h-5 rounded-full border-2 border-surface-3 border-t-accent animate-spin" />
+          <div className="h-[96px] pt-2 pb-1 flex items-end gap-2 px-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="flex-1 h-12 rounded-t-md rounded-b-none" />
+            ))}
           </div>
         )}
 
@@ -192,50 +191,42 @@ export default function GroupDetail({ type }: GroupDetailProps) {
         )}
 
         <div className="mt-2 space-y-2">
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={selectedMonth}
-              initial={{ opacity: 0, x: 6 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -6 }}
-              transition={{ duration: 0.08, ease: [0.25, 0.8, 0.25, 1] }}
-            >
-              {txList.length === 0 ? (
-                <EmptyState
-                  icon={<WalletIcon className="w-7 h-7" />}
-                  title="No transactions"
-                  subtitle={`No ${type === 'category' ? 'category' : 'merchant'} spending in ${monthSubtitle}`}
-                />
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-xs font-semibold text-tertiary uppercase tracking-wide">
-                      {txList.length} transaction{txList.length !== 1 ? 's' : ''}
-                    </span>
-                    <span className="text-sm font-bold text-label">
-                      {formatCurrency(totalExpense)}
-                    </span>
-                  </div>
-                   {txList.slice(0, MAX_ROWS).map((t) => (
-                    <Card key={t.id} padded={false} className="px-3 py-1">
-                      <TransactionRow
-                        t={t}
-                        category={getCategory(t.category)}
-                        onCategoryChange={(cat) => handleCategoryChange(t.id!, cat)}
-                        allCategories={categories}
-                        onClick={() => setSelectedTransaction(t)}
-                      />
-                    </Card>
-                  ))}
-                  {txList.length > MAX_ROWS && (
-                    <div className="py-3 text-center text-xs text-tertiary">
-                      +{txList.length - MAX_ROWS} more this month
-                    </div>
-                  )}
+          {transactionsLoading ? (
+            <DetailTransactionsLoadingSkeleton />
+          ) : txList.length === 0 ? (
+            <EmptyState
+              icon={<WalletIcon className="w-7 h-7" />}
+              title="No transactions"
+              subtitle={`No ${type === 'category' ? 'category' : 'merchant'} spending in ${monthSubtitle}`}
+            />
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-semibold text-tertiary uppercase tracking-wide">
+                  {txList.length} transaction{txList.length !== 1 ? 's' : ''}
+                </span>
+                <span className="text-sm font-bold text-label">
+                  {formatCurrency(totalExpense)}
+                </span>
+              </div>
+              {txList.slice(0, MAX_ROWS).map((t) => (
+                <Card key={t.id} padded={false} className="px-3 py-1">
+                  <TransactionRow
+                    t={t}
+                    category={getCategory(t.category)}
+                    onCategoryChange={(cat) => handleCategoryChange(t.id!, cat)}
+                    allCategories={categories}
+                    onClick={() => setSelectedTransaction(t)}
+                  />
+                </Card>
+              ))}
+              {txList.length > MAX_ROWS && (
+                <div className="py-3 text-center text-xs text-tertiary">
+                  +{txList.length - MAX_ROWS} more this month
                 </div>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
 
@@ -246,6 +237,29 @@ export default function GroupDetail({ type }: GroupDetailProps) {
           onUpdate={updateTransaction}
         />
       )}
+    </div>
+  );
+}
+
+function DetailTransactionsLoadingSkeleton() {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-1">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Card key={i} padded={false} className="px-3 py-1">
+          <div className="flex items-center gap-3 h-[60px]">
+            <Skeleton className="w-11 h-11 rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/5" />
+              <Skeleton className="h-3 w-2/5" />
+            </div>
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

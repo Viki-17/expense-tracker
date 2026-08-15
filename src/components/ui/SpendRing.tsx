@@ -49,8 +49,8 @@ function SpendRingBase({ spent, budget, size = 180 }: SpendRingProps) {
         </PieChart>
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-[11px] font-medium text-tertiary uppercase tracking-wide">Spent</span>
-        <span className="text-2xl font-bold text-label leading-tight">{formatCurrency(spent)}</span>
+        <span className="text-[11px] font-medium text-secondary uppercase tracking-[0.16em]">Spent</span>
+        <span className="display-number text-3xl font-bold text-label leading-tight">{formatCurrency(spent)}</span>
         {safeBudget > 0 ? (
           <span className={`text-[11px] font-medium ${over ? 'text-danger' : 'text-tertiary'}`}>
             {over ? `${formatCurrency(spent - safeBudget)} over` : `${formatCurrency(remaining)} left`}

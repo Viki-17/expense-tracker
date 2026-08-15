@@ -109,7 +109,7 @@ export default function Settings() {
           </IconButton>
         }
       />
-      <div className="px-4 max-w-2xl mx-auto w-full pt-4 space-y-4" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
+      <div className="max-w-none lg:max-w-3xl lg:mx-auto w-full pt-4 space-y-4" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
         {/* Data management */}
         <Card>
           <h3 className="text-sm font-bold text-label mb-3">Data Management</h3>

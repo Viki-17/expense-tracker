@@ -35,7 +35,7 @@ export default {
         mint: { DEFAULT: '#e3f675', 50: '#f0fff0', 100: '#d9ffd6', 200: '#b3ffae', 300: '#99ff91', 400: '#e3f675', 500: '#6be060', 600: '#55c24b', 700: '#3a8532', 800: '#1f471b', 900: '#122a10', 950: '#0a1908' },
         cyan: { 400: '#e3f675', 500: '#6be060' },
         primary: { 50: '#f0fff0', 100: '#d9ffd6', 200: '#b3ffae', 300: '#99ff91', 400: '#e3f675', 500: '#6be060', 600: '#55c24b', 700: '#3a8532', 800: '#1f471b', 900: '#122a10', 950: '#0a1908' },
-        expense: { 400: '#f87171', 500: '#ef4444', 600: '#dc2626' },
+        expense: { 400: '#df8278', 500: '#cf7169', 600: '#b85b54' },
         income: { 400: '#a3ff9a', 500: '#83f774', 600: '#6be060' },
       },
       fontFamily: {
@@ -52,8 +52,8 @@ export default {
         card: 'var(--shadow)',
       },
       backgroundImage: {
-        'kk-gradient': 'linear-gradient(135deg, #0a1f0a 0%, #0a0f0a 100%)',
-        'kk-glow': 'radial-gradient(ellipse at 50% 0%, rgba(128, 247, 116, 0.12) 0%, transparent 60%)',
+        'kk-gradient': 'linear-gradient(135deg, #303720 0%, #151b0e 100%)',
+        'kk-glow': 'radial-gradient(ellipse at 50% -10%, rgba(227, 246, 117, 0.16) 0%, transparent 62%)',
       },
     },
   },

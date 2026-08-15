@@ -16,6 +16,7 @@ export function useSwipe({
   const ref = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const startY = useRef(0);
+  const tracking = useRef(false);
   const leftRef = useRef(onSwipeLeft);
   const rightRef = useRef(onSwipeRight);
 
@@ -26,12 +27,23 @@ export function useSwipe({
     const el = ref.current;
     if (!el || disabled) return;
 
+    const isInteractiveTarget = (target: EventTarget | null) =>
+      target instanceof Element &&
+      !!target.closest('button, a, input, textarea, select, [role="button"]');
+
     const handlePointerDown = (e: PointerEvent) => {
+      if (isInteractiveTarget(e.target)) {
+        tracking.current = false;
+        return;
+      }
+      tracking.current = true;
       startX.current = e.clientX;
       startY.current = e.clientY;
     };
 
     const handlePointerUp = (e: PointerEvent) => {
+      if (!tracking.current) return;
+      tracking.current = false;
       const dx = e.clientX - startX.current;
       const dy = e.clientY - startY.current;
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
@@ -40,12 +52,18 @@ export function useSwipe({
       }
     };
 
+    const handlePointerCancel = () => {
+      tracking.current = false;
+    };
+
     el.addEventListener('pointerdown', handlePointerDown);
     el.addEventListener('pointerup', handlePointerUp);
+    el.addEventListener('pointercancel', handlePointerCancel);
 
     return () => {
       el.removeEventListener('pointerdown', handlePointerDown);
       el.removeEventListener('pointerup', handlePointerUp);
+      el.removeEventListener('pointercancel', handlePointerCancel);
     };
   }, [threshold, disabled]);
 

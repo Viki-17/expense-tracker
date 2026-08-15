@@ -58,6 +58,7 @@ export function CategoryPicker({ categories, anchorRect, onSelect, onClose }: Pr
         {categories.map((cat) => (
           <button
             key={cat.name}
+            type="button"
             onClick={(e) => { e.stopPropagation(); onSelect(cat.name); }}
             className="w-full flex items-center gap-3 px-3.5 py-2 hover:bg-surface-2 active:bg-surface-2 transition-colors text-left"
           >

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../hooks/useCategories';
@@ -11,6 +11,7 @@ import { EmptyState } from './ui/EmptyState';
 import { Button } from './ui/Button';
 import { CategoryPicker } from './ui/CategoryPicker';
 import { TransactionDetailModal } from './TransactionDetailModal';
+import { Skeleton } from './ui/Skeleton';
 import type { SortField, SortDirection, Transaction } from '../types';
 const FILTERS = ['all', 'expense', 'income', 'neutral'] as const;
 type Filter = (typeof FILTERS)[number];
@@ -23,7 +24,7 @@ type FlatRow =
   | { kind: 'row'; t: Transaction; key: string };
 
 export default function TransactionList() {
-  const { transactions, deleteTransaction, updateTransaction } = useTransactions();
+  const { transactions, loading, deleteTransaction, updateTransaction } = useTransactions();
   const { getCategory, categories } = useCategories();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,7 +37,6 @@ export default function TransactionList() {
   const [listHeight, setListHeight] = useState(480);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [categoryPicker, setCategoryPicker] = useState<{ anchorRect: DOMRect; transactionId: number } | null>(null);
-  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   useEffect(() => {
     const update = () => setListHeight(Math.max(window.innerHeight - 260, 240));
@@ -129,20 +129,6 @@ export default function TransactionList() {
           className="group flex items-center gap-3 py-3 px-2 active:bg-surface-2/60 rounded-lg transition-colors cursor-pointer"
           style={{ height: ROW_HEIGHT, boxSizing: 'border-box' }}
           onClick={() => setSelectedTransaction(t)}
-          onPointerDown={(e) => {
-            pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
-          }}
-          onPointerUp={(e) => {
-            const start = pointerStartRef.current;
-            if (!start) return;
-            const dx = e.clientX - start.x;
-            const dy = e.clientY - start.y;
-            const dt = Date.now() - start.time;
-            pointerStartRef.current = null;
-            if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 500) {
-              setSelectedTransaction(t);
-            }
-          }}
         >
           <div
             className="w-11 h-11 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 cursor-pointer"
@@ -152,8 +138,6 @@ export default function TransactionList() {
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
               setCategoryPicker({ anchorRect: rect, transactionId: t.id! });
             }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onPointerUp={(e) => e.stopPropagation()}
           >
             <CategoryIcon name={cat?.name || t.category} className="w-5 h-5" />
           </div>
@@ -172,8 +156,6 @@ export default function TransactionList() {
             </p>
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(t.id!); }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
               aria-label="Delete"
               className="tap p-1.5 rounded-lg text-tertiary hover:text-danger active:scale-90"
             >
@@ -186,11 +168,33 @@ export default function TransactionList() {
     [getCategory, handleDelete]
   );
 
+  if (loading) {
+    return (
+      <div>
+        <TopBar title="Transactions" subtitle="Loading activity" />
+        <div className="max-w-none lg:max-w-3xl lg:mx-auto w-full pt-4">
+          <Card padded={false} className="px-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-2 h-[72px]">
+                <Skeleton className="w-11 h-11 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/5" />
+                  <Skeleton className="h-3 w-2/5" />
+                </div>
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (transactions.length === 0) {
     return (
       <div>
         <TopBar title="Transactions" subtitle="All activity" />
-        <div className="px-4 max-w-2xl mx-auto">
+        <div className="max-w-none lg:max-w-3xl lg:mx-auto">
           <EmptyState
             icon={<ListBulletIcon className="w-7 h-7" />}
             title="No transactions yet"
@@ -219,7 +223,7 @@ export default function TransactionList() {
         }
       />
 
-      <div className="px-4 max-w-2xl mx-auto w-full pt-4 flex flex-col flex-1 min-h-0">
+      <div className="max-w-none lg:max-w-3xl lg:mx-auto w-full pt-4 flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between mb-3 gap-2 shrink-0">
           <div className="inline-flex bg-surface-2 rounded-xl p-1">
             {FILTERS.map((f) => (

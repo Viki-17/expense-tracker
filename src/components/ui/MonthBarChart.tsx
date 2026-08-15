@@ -42,6 +42,7 @@ function MonthBarChartBase({ data, selectedMonth, onSelect }: MonthBarChartProps
           return (
             <button
               key={d.month}
+              type="button"
               ref={active ? selectedRef : undefined}
               onClick={() => onSelect(d.month)}
               className="tap flex flex-col items-center gap-1 px-1.5 py-2 rounded-xl transition-colors min-w-[56px] active:scale-95"

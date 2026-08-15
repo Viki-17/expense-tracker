@@ -1,11 +1,11 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import type { Transaction } from '../types';
 import { today } from '../utils/formatters';
 
 export function useTransactions(startDate?: string, endDate?: string) {
-  const transactions = useLiveQuery(
+  const result = useLiveQuery(
     () => {
       if (startDate && endDate) {
         return db.getTransactionsInRange(startDate, endDate);
@@ -14,6 +14,12 @@ export function useTransactions(startDate?: string, endDate?: string) {
     },
     [startDate, endDate]
   );
+
+  const previousRef = useRef<Transaction[] | null>(null);
+  if (result !== undefined) previousRef.current = result;
+  const transactions = result ?? previousRef.current ?? [];
+  const loading = previousRef.current === null && result === undefined;
+  const refreshing = previousRef.current !== null && result === undefined;
 
   const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
     await db.transactions.add({ ...t, createdAt: new Date().toISOString() });
@@ -27,7 +33,14 @@ export function useTransactions(startDate?: string, endDate?: string) {
     await db.transactions.update(id, updates);
   }, []);
 
-  return { transactions: transactions || [], addTransaction, deleteTransaction, updateTransaction };
+  return {
+    transactions,
+    loading,
+    refreshing,
+    addTransaction,
+    deleteTransaction,
+    updateTransaction,
+  };
 }
 
 export function useTransactionStats(startDate?: string, endDate?: string) {

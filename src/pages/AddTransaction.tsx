@@ -65,7 +65,7 @@ export default function AddTransaction() {
         }
       />
 
-      <form onSubmit={handleSubmit} className="px-4 max-w-xl mx-auto w-full pt-4 space-y-5" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
+      <form onSubmit={handleSubmit} className="max-w-none lg:max-w-xl lg:mx-auto w-full pt-4 space-y-5" style={{ paddingBottom: 'calc(var(--sab) + 1rem)' }}>
         <div className="grid grid-cols-3 gap-3">
           <button
             type="button"
@@ -153,7 +153,7 @@ export default function AddTransaction() {
           </div>
         </Card>
 
-        <div className="max-w-xl mx-auto w-full">
+        <div className="max-w-none lg:max-w-xl lg:mx-auto w-full">
           <Button type="submit" full size="lg">
             Add {type === 'expense' ? 'expense' : type === 'income' ? 'income' : 'neutral'}
           </Button>

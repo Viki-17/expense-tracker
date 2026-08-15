@@ -24,7 +24,7 @@ export function Avatar({ size = 'md', color, children, icon, className = '' }: A
   const bg = color || 'rgb(var(--surface-2))';
   return (
     <div
-      className={`flex items-center justify-center rounded-full font-semibold shrink-0 contain-layout ${sizeCls[size]} ${className}`}
+      className={`flex items-center justify-center rounded-2xl font-semibold shrink-0 contain-layout border border-white/5 ${sizeCls[size]} ${className}`}
       style={{
         backgroundColor: tintFrom(color) || bg,
         color: color || 'rgb(var(--label))',

@@ -24,56 +24,56 @@ export const theme = {
 
   /** Page background */
   canvas: {
-    hex: '#0a0f0a',
-    rgb: '10 15 10',
+    hex: '#232816',
+    rgb: '35 40 22',
   },
 
   /** Primary card surface */
   surface: {
-    hex: '#121a12',
-    rgb: '18 26 18',
+    hex: '#090b07',
+    rgb: '9 11 7',
   },
 
   /** Inset surface / input backgrounds */
   surface2: {
-    hex: '#1a241a',
-    rgb: '26 36 26',
+    hex: '#181c10',
+    rgb: '24 28 16',
   },
 
   /** Elevated / hover surface */
   surface3: {
-    hex: '#243024',
-    rgb: '36 48 36',
+    hex: '#30361c',
+    rgb: '48 54 28',
   },
 
   /** Primary text */
   label: {
-    hex: '#f5fff2',
-    rgb: '245 255 242',
+    hex: '#f8fae7',
+    rgb: '248 250 231',
   },
 
   /** Secondary text */
   secondary: {
-    hex: '#9ab093',
-    rgb: '154 176 147',
+    hex: '#c0c799',
+    rgb: '192 199 153',
   },
 
   /** Muted / tertiary text */
   tertiary: {
-    hex: '#6a7a60',
-    rgb: '106 122 96',
+    hex: '#848d5e',
+    rgb: '132 141 94',
   },
 
   /** Borders / dividers */
   separator: {
-    hex: '#243024',
-    rgb: '36 48 36',
+    hex: '#474e2b',
+    rgb: '71 78 43',
   },
 
   /** Subtle accent-tinted backgrounds */
   accentSoft: {
-    hex: '#1a3a16',
-    rgb: '26 58 22',
+    hex: '#3f4b16',
+    rgb: '63 75 22',
   },
 
   /** Accent glow / highlight */
@@ -84,20 +84,20 @@ export const theme = {
 
   /** Danger / expense red */
   danger: {
-    hex: '#ff6b6b',
-    rgb: '255 107 107',
+    hex: '#d3776f',
+    rgb: '211 119 111',
   },
 
   /** Danger-tinted subtle background */
   dangerSoft: {
-    hex: '#502323',
-    rgb: '80 35 35',
+    hex: '#3c221f',
+    rgb: '60 34 31',
   },
 
   /** Success-tinted subtle background */
   successSoft: {
-    hex: '#1a3a16',
-    rgb: '26 58 22',
+    hex: '#3f4b16',
+    rgb: '63 75 22',
   },
 
   /** Warning yellow */

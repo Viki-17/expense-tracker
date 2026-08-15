@@ -21,7 +21,7 @@ export function Card({ children, className = '', inset, onClick, padded = true }
             }
           : undefined
       }
-      className={`${inset ? 'cardInset' : 'card'} shadow-card ${
+      className={`${inset ? 'cardInset' : 'card'} ${
         onClick ? 'tap active:scale-[0.99] cursor-pointer' : ''
       } ${padded ? 'p-4' : ''} ${className}`}
     >

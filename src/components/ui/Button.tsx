@@ -11,7 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-gradient-to-r from-accent to-lime-300 text-on-accent shadow-lg shadow-accent/25 hover:brightness-110 active:brightness-95',
+  primary: 'bg-accent text-on-accent shadow-lg shadow-accent/20 hover:brightness-110 active:brightness-95',
   secondary:
     'bg-surface-2 text-label hover:bg-surface-3 border border-separator/60',
   ghost: 'text-secondary hover:text-label hover:bg-surface-2',
@@ -20,8 +20,8 @@ const variants: Record<Variant, string> = {
 
 const sizes: Record<Size, string> = {
   sm: 'px-3 py-1.5 text-xs rounded-lg',
-  md: 'px-4 py-2.5 text-sm rounded-xl',
-  lg: 'px-5 py-3.5 text-sm rounded-xl',
+  md: 'px-4 py-3 text-sm rounded-2xl',
+  lg: 'px-5 py-3.5 text-sm rounded-2xl',
 };
 
 export function Button({
@@ -30,11 +30,13 @@ export function Button({
   full,
   className = '',
   children,
+  type = 'button',
   ...rest
 }: ButtonProps) {
   return (
     <button
       {...rest}
+      type={type}
       className={`tap font-semibold transition-all active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100 ${
         variants[variant]
       } ${sizes[size]} ${full ? 'w-full' : ''} ${className}`}

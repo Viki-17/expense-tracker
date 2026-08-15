@@ -34,18 +34,18 @@ function TransactionRowBase({ t, category, onDelete, showCategoryTag = true, onC
   }, [onCategoryChange]);
 
   return (
-    <div onClick={onClick} className="group flex items-center gap-3 py-3 px-1 active:bg-surface-2/60 rounded-lg transition-colors contain-layout cursor-pointer">
+    <div onClick={onClick} className="group flex items-center gap-3 py-3.5 px-1 active:bg-surface-2/60 rounded-xl transition-colors contain-layout cursor-pointer">
       <div ref={avatarRef} onClick={handleAvatarClick} className={onCategoryChange ? 'cursor-pointer' : ''}>
         {category ? (
           <Avatar size="md" color={categoryColor(category)} icon={<CategoryIcon name={category.name} />} />
         ) : (
-          <Avatar size="md" color={categoryColor(undefined, t.type === 'expense' ? '#ef4444' : t.type === 'income' ? '#22c55e' : '#64748b')}>
+          <Avatar size="md" color={categoryColor(undefined, t.type === 'expense' ? '#cf7169' : t.type === 'income' ? '#22c55e' : '#64748b')}>
             {isExpense ? '↓' : isIncome ? '↑' : '○'}
           </Avatar>
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-label truncate">{t.description || t.category}</p>
+        <p className="text-sm font-semibold tracking-[-0.01em] text-label truncate">{t.description || t.category}</p>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <span className="text-xs text-tertiary">{formatDateShort(t.date)}</span>
           {showCategoryTag && (

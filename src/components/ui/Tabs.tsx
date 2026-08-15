@@ -12,17 +12,19 @@ interface TabsProps<T extends string> {
   onChange: (v: T) => void;
   variant?: 'underline' | 'pill';
   className?: string;
+  layoutId?: string;
 }
 
-export function Tabs<T extends string>({ tabs, value, onChange, variant = 'underline', className = '' }: TabsProps<T>) {
+export function Tabs<T extends string>({ tabs, value, onChange, variant = 'underline', className = '', layoutId }: TabsProps<T>) {
   if (variant === 'pill') {
     return (
-      <div className={`inline-flex bg-surface-2 rounded-xl p-1 ${className}`}>
+      <div className={`inline-flex bg-surface-2 rounded-2xl p-1 border border-separator/40 ${className}`}>
         {tabs.map((t) => {
           const active = t.key === value;
           return (
             <button
               key={t.key}
+              type="button"
               onClick={() => onChange(t.key)}
               className={`relative px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 active ? 'text-label' : 'text-tertiary'
@@ -30,12 +32,13 @@ export function Tabs<T extends string>({ tabs, value, onChange, variant = 'under
             >
               {active && (
                 <motion.span
-                  layoutId="pill-bg"
-                  className="absolute inset-0 bg-surface rounded-lg shadow-card"
+                  layoutId={layoutId ?? 'pill-bg'}
+                  initial={false}
+                  className="absolute inset-0 bg-accent rounded-xl shadow-lg shadow-accent/10"
                   transition={{ type: 'spring', stiffness: 500, damping: 42 }}
                 />
               )}
-              <span className="relative">{t.label}</span>
+              <span className={`relative ${active ? 'text-on-accent' : ''}`}>{t.label}</span>
             </button>
           );
         })}
@@ -50,6 +53,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, variant = 'under
         return (
           <button
             key={t.key}
+            type="button"
             onClick={() => onChange(t.key)}
             className={`relative py-2.5 text-sm font-semibold transition-colors whitespace-nowrap ${
               active ? 'text-label' : 'text-tertiary'
