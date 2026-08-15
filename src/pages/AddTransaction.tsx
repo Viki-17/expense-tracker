@@ -55,7 +55,7 @@ export default function AddTransaction() {
   );
 
   return (
-    <div className="flex flex-col min-h-full safe-top">
+    <div className="flex flex-col min-h-full">
       <TopBar
         title="Add transaction"
         leading={

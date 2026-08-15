@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
@@ -296,17 +296,16 @@ export default function Dashboard() {
           {chartOpen && (
             <motion.div
               key="chart"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15, ease: 'easeInOut' }}
-              className="overflow-hidden"
             >
               <div className="pt-3 pb-1">
                   {monthlyTotalsLoading ? (
-                    <div className="h-[88px] flex items-end gap-2 px-2 pb-2">
+                    <div className="h-[126px] flex items-end gap-2 px-2 pb-2 contain-layout">
                       {Array.from({ length: 7 }).map((_, i) => (
-                        <Skeleton key={i} className="flex-1 rounded-t-md rounded-b-none" style={{ height: `${28 + (i % 4) * 12}px` }} />
+                        <Skeleton key={i} className="w-5 rounded-t-md rounded-b-none" style={{ height: `${28 + (i % 4) * 12}px` }} />
                       ))}
                     </div>
                   ) : (
@@ -338,14 +337,13 @@ export default function Dashboard() {
           </div>
         )}
 
-        <AnimatePresence mode="popLayout" initial={false} custom={tabDirection}>
+        <AnimatePresence initial={false} custom={tabDirection}>
           <motion.div
             key={tab}
             custom={tabDirection}
-            initial={{ opacity: 0, x: tabDirection * 7 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: tabDirection * -5 }}
-            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === 'transactions' && (
               <TransactionsTab
@@ -416,7 +414,7 @@ interface TransactionsTabProps {
   onBudget: () => void;
 }
 
-function TransactionsTab({
+function TransactionsTabBase({
   rows,
   loading,
   total,
@@ -438,20 +436,15 @@ function TransactionsTab({
   const list = (
     <div className="space-y-2">
       {rows.map((t) => (
-        <Card
+        <DashboardRow
           key={t.id}
-          padded={false}
-          className="px-3 py-1"
-        >
-          <TransactionRow
-            t={t}
-            category={getCategory(t.category)}
-            onDelete={onDelete}
-            onClick={() => setSelectedTransaction(t)}
-            onCategoryChange={(cat) => onUpdateCategory(t.id!, cat)}
-            allCategories={allCategories}
-          />
-        </Card>
+          t={t}
+          category={getCategory(t.category)}
+          onDelete={onDelete}
+          onSelect={setSelectedTransaction}
+          onCategoryChange={onUpdateCategory}
+          allCategories={allCategories}
+        />
       ))}
       {total > rows.length && (
         <div className="py-3 text-center text-xs text-tertiary">
@@ -553,6 +546,42 @@ function TransactionsTab({
   );
 }
 
+const TransactionsTab = memo(TransactionsTabBase);
+
+/* ───────── Dashboard Row (memoized to survive tab re-renders) ───────── */
+interface DashboardRowProps {
+  t: import('../types').Transaction;
+  category?: import('../types').Category;
+  onDelete?: (id: number) => void;
+  onSelect: (t: import('../types').Transaction) => void;
+  onCategoryChange: (id: number, category: string) => void;
+  allCategories: import('../types').Category[];
+}
+
+function DashboardRowBase({
+  t,
+  category,
+  onDelete,
+  onSelect,
+  onCategoryChange,
+  allCategories,
+}: DashboardRowProps) {
+  return (
+    <Card padded={false} className="px-3 py-1">
+      <TransactionRow
+        t={t}
+        category={category}
+        onDelete={onDelete}
+        onClick={() => onSelect(t)}
+        onCategoryChange={(cat) => onCategoryChange(t.id!, cat)}
+        allCategories={allCategories}
+      />
+    </Card>
+  );
+}
+
+const DashboardRow = memo(DashboardRowBase);
+
 /* ───────── Categories Tab ───────── */
 interface CategoriesTabProps {
   sortedBreakdown: [string, number][];
@@ -564,7 +593,7 @@ interface CategoriesTabProps {
   empty: boolean;
 }
 
-function CategoriesTab({
+function CategoriesTabBase({
   sortedBreakdown,
   loading,
   totalExpense,
@@ -676,6 +705,8 @@ function CategoriesTab({
   );
 }
 
+const CategoriesTab = memo(CategoriesTabBase);
+
 /* ───────── Merchants Tab ───────── */
 interface MerchantsTabProps {
   merchants: { name: string; total: number; count: number }[];
@@ -683,7 +714,7 @@ interface MerchantsTabProps {
   loading: boolean;
 }
 
-function MerchantsTab({ merchants, onAdd, loading }: MerchantsTabProps) {
+function MerchantsTabBase({ merchants, onAdd, loading }: MerchantsTabProps) {
   const navigate = useNavigate();
 
   const maxAmt = useMemo(
@@ -760,9 +791,11 @@ function MerchantsTab({ merchants, onAdd, loading }: MerchantsTabProps) {
   );
 }
 
+const MerchantsTab = memo(MerchantsTabBase);
+
 function TransactionsLoadingSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 contain-layout">
       <Card className="ambient-panel relative overflow-hidden flex flex-col items-center gap-2 py-7">
         <Skeleton className="w-[180px] h-[180px] rounded-full" />
         <div className="grid grid-cols-2 gap-3 w-full mt-1">
@@ -773,7 +806,7 @@ function TransactionsLoadingSkeleton() {
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <Card key={i} padded={false} className="px-3 py-1">
-            <div className="flex items-center gap-3 h-[60px]">
+            <div className="flex items-center gap-3 h-[72px]">
               <Skeleton className="w-11 h-11 rounded-full shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-4 w-3/5" />
@@ -790,14 +823,14 @@ function TransactionsLoadingSkeleton() {
 
 function CategoriesLoadingSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 contain-layout">
       <Card className="min-h-[192px] flex items-center justify-center">
         <Skeleton className="w-40 h-40 rounded-full" />
       </Card>
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <Card key={i} padded={false} className="px-3 py-2.5">
-            <div className="flex items-center gap-3 h-11">
+            <div className="flex items-center gap-3 h-[37px]">
               <Skeleton className="w-10 h-10 rounded-full shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-3.5 w-3/5" />
@@ -814,10 +847,10 @@ function CategoriesLoadingSkeleton() {
 
 function MerchantsLoadingSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 contain-layout">
       {Array.from({ length: 5 }).map((_, i) => (
         <Card key={i} padded={false} className="px-3 py-2.5">
-          <div className="flex items-center gap-3 h-11">
+          <div className="flex items-center gap-3 h-9">
             <Skeleton className="w-10 h-10 rounded-full shrink-0" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-3.5 w-2/5" />

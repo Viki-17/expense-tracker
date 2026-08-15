@@ -173,7 +173,7 @@ export default function TransactionList() {
       <div>
         <TopBar title="Transactions" subtitle="Loading activity" />
         <div className="max-w-none lg:max-w-3xl lg:mx-auto w-full pt-4">
-          <Card padded={false} className="px-2">
+          <Card padded={false} className="px-2 contain-layout">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-2 h-[72px]">
                 <Skeleton className="w-11 h-11 rounded-full shrink-0" />

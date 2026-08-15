@@ -17,6 +17,7 @@ export function useSwipe({
   const startX = useRef(0);
   const startY = useRef(0);
   const tracking = useRef(false);
+  const pointerId = useRef<number | null>(null);
   const leftRef = useRef(onSwipeLeft);
   const rightRef = useRef(onSwipeRight);
 
@@ -27,33 +28,33 @@ export function useSwipe({
     const el = ref.current;
     if (!el || disabled) return;
 
-    const isInteractiveTarget = (target: EventTarget | null) =>
-      target instanceof Element &&
-      !!target.closest('button, a, input, textarea, select, [role="button"]');
-
     const handlePointerDown = (e: PointerEvent) => {
-      if (isInteractiveTarget(e.target)) {
-        tracking.current = false;
-        return;
-      }
+      if (!e.isPrimary) return;
       tracking.current = true;
+      pointerId.current = e.pointerId;
       startX.current = e.clientX;
       startY.current = e.clientY;
+      el.setPointerCapture(e.pointerId);
     };
 
     const handlePointerUp = (e: PointerEvent) => {
-      if (!tracking.current) return;
+      if (!tracking.current || pointerId.current !== e.pointerId) return;
       tracking.current = false;
+      pointerId.current = null;
       const dx = e.clientX - startX.current;
       const dy = e.clientY - startY.current;
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+        e.preventDefault();
         if (dx > 0) rightRef.current?.();
         else leftRef.current?.();
       }
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
     };
 
-    const handlePointerCancel = () => {
+    const handlePointerCancel = (e: PointerEvent) => {
+      if (pointerId.current !== e.pointerId) return;
       tracking.current = false;
+      pointerId.current = null;
     };
 
     el.addEventListener('pointerdown', handlePointerDown);
@@ -64,6 +65,8 @@ export function useSwipe({
       el.removeEventListener('pointerdown', handlePointerDown);
       el.removeEventListener('pointerup', handlePointerUp);
       el.removeEventListener('pointercancel', handlePointerCancel);
+      tracking.current = false;
+      pointerId.current = null;
     };
   }, [threshold, disabled]);
 

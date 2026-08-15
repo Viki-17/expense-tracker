@@ -18,16 +18,34 @@ function GroupBarChartBase({ data, selectedMonth, onSelect }: GroupBarChartProps
   const selectedRef = useRef<HTMLButtonElement>(null);
 
   useLayoutEffect(() => {
-    if (!scrollRef.current || !selectedRef.current) return;
     const container = scrollRef.current;
     const selected = selectedRef.current;
-    const containerWidth = container.clientWidth;
-    const selectedLeft = selected.offsetLeft;
-    const selectedWidth = selected.clientWidth;
-    container.scrollTo({
-      left: selectedLeft - containerWidth / 2 + selectedWidth / 2,
-      behavior: 'auto',
-    });
+    if (!container || !selected) return;
+
+    const center = () => {
+      const containerWidth = container.clientWidth;
+      const selectedLeft = selected.offsetLeft;
+      const selectedWidth = selected.clientWidth;
+      container.scrollTo({
+        left: selectedLeft - containerWidth / 2 + selectedWidth / 2,
+        behavior: 'auto',
+      });
+    };
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(center);
+    };
+
+    schedule();
+    const ro = new ResizeObserver(schedule);
+    ro.observe(container);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [selectedMonth]);
 
   return (

@@ -163,9 +163,9 @@ export default function GroupDetail({ type }: GroupDetailProps) {
 
       <div className="w-full lg:max-w-2xl lg:mx-auto">
         {chartLoading && (
-          <div className="h-[96px] pt-2 pb-1 flex items-end gap-2 px-2">
+          <div className="h-[126px] pt-2 pb-1 flex items-end gap-2 px-2 contain-layout">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="flex-1 h-12 rounded-t-md rounded-b-none" />
+              <Skeleton key={i} className="flex-1 rounded-t-md rounded-b-none" style={{ height: `${14 + (i % 4) * 14}px` }} />
             ))}
           </div>
         )}
@@ -243,14 +243,14 @@ export default function GroupDetail({ type }: GroupDetailProps) {
 
 function DetailTransactionsLoadingSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 contain-layout">
       <div className="flex items-center justify-between px-1">
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-4 w-16" />
       </div>
       {Array.from({ length: 5 }).map((_, i) => (
         <Card key={i} padded={false} className="px-3 py-1">
-          <div className="flex items-center gap-3 h-[60px]">
+          <div className="flex items-center gap-3 h-[72px]">
             <Skeleton className="w-11 h-11 rounded-full shrink-0" />
             <div className="flex-1 space-y-2">
               <Skeleton className="h-4 w-3/5" />

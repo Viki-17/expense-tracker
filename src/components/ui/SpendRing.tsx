@@ -13,6 +13,8 @@ function SpendRingBase({ spent, budget, size = 180 }: SpendRingProps) {
   const fraction = safeBudget > 0 ? Math.min(spent / safeBudget, 1) : spent > 0 ? 1 : 0;
   const remaining = safeBudget > 0 ? Math.max(safeBudget - spent, 0) : 0;
   const over = safeBudget > 0 && spent > safeBudget;
+  const spentLabel = formatCurrency(spent);
+  const amountFontSize = Math.min(30, Math.max(16, (size * 0.76) / (spentLabel.length * 0.56)));
 
   const data =
     safeBudget > 0
@@ -50,7 +52,12 @@ function SpendRingBase({ spent, budget, size = 180 }: SpendRingProps) {
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         <span className="text-[11px] font-medium text-secondary uppercase tracking-[0.16em]">Spent</span>
-        <span className="display-number text-3xl font-bold text-label leading-tight">{formatCurrency(spent)}</span>
+        <span
+          className="display-number font-bold text-label leading-tight whitespace-nowrap"
+          style={{ fontSize: amountFontSize, maxWidth: size * 0.76 }}
+        >
+          {spentLabel}
+        </span>
         {safeBudget > 0 ? (
           <span className={`text-[11px] font-medium ${over ? 'text-danger' : 'text-tertiary'}`}>
             {over ? `${formatCurrency(spent - safeBudget)} over` : `${formatCurrency(remaining)} left`}
